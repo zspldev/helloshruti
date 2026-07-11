@@ -4,6 +4,8 @@ export interface UserProfile {
   name: string;
   nickname: string;
   language: string;
+  contentLanguages: string[];
+  country: string;
   interests: string[];
   briefingTime: string;
   readingLength: string;

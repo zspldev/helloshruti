@@ -5,6 +5,7 @@ import { voiceService } from '@/services/voiceService';
 import { useProfile } from '@/hooks/use-profile';
 import { listArticles } from '@workspace/api-client-react';
 import { articleService } from '@/services/articleService';
+import { getExplainText, getSummaryText, getFullReadText } from '@/lib/narration';
 import { X, Mic, Send, MicOff } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -51,9 +52,8 @@ export default function VoiceOverlay() {
       const article = e.detail?.article;
       if (article) {
         setContextArticle(article);
-        const text = `${article.title}. ${article.content}`;
         addMessage('shruti', `Reading: ${article.title}...`);
-        voiceService.speak(text);
+        voiceService.speak(getFullReadText(article));
       }
     };
 
@@ -116,21 +116,21 @@ export default function VoiceOverlay() {
       switch (command) {
         case 'READ_ARTICLE':
           if (activeArticle) {
-            response = `Reading ${activeArticle.title}. ${activeArticle.content}`;
+            response = `Reading ${getFullReadText(activeArticle)}`;
           } else {
             response = "I don't have a specific article open right now. Would you like me to read your briefing?";
           }
           break;
         case 'SUMMARIZE':
           if (activeArticle) {
-            response = `Here is a summary of ${activeArticle.title}: ${activeArticle.summary}`;
+            response = getSummaryText(activeArticle);
           } else {
             response = "I don't have a specific article open right now to summarize.";
           }
           break;
         case 'EXPLAIN':
           if (activeArticle) {
-            response = `Certainly, ${nickname}. This article discusses ${activeArticle.title}. In simple terms, it means that ${activeArticle.summary} It is highly relevant to your interest in ${activeArticle.topics[0]}.`;
+            response = getExplainText(activeArticle, nickname);
           } else {
             response = "I need an article context to explain further.";
           }
