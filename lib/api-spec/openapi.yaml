@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: articles
+    description: Live news article operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,61 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /articles:
+    get:
+      operationId: listArticles
+      tags: [articles]
+      summary: List recommended articles
+      description: Fetches real, current news articles matching the given interests from live news sources.
+      parameters:
+        - name: interests
+          in: query
+          required: false
+          description: Comma-separated list of topics to search for
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of articles to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+      responses:
+        "200":
+          description: List of recommended articles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ReadingRecommendation"
+  /articles/{id}:
+    get:
+      operationId: getArticle
+      tags: [articles]
+      summary: Get a single article
+      description: Fetches a single previously-seen live article by id.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The article
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Article"
+        "404":
+          description: Article not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArticleError"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +90,58 @@ components:
           type: string
       required:
         - status
+    Article:
+      type: object
+      description: A real, live news article sourced from the web.
+      required:
+        - id
+        - title
+        - summary
+        - content
+        - source
+        - url
+        - date
+        - estimatedReadingTime
+        - topics
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        content:
+          type: string
+        source:
+          type: string
+        url:
+          type: string
+        date:
+          type: string
+        estimatedReadingTime:
+          type: string
+        imageUrl:
+          type: ["string", "null"]
+        topics:
+          type: array
+          items:
+            type: string
+    ReadingRecommendation:
+      type: object
+      description: An article paired with the reason it was recommended.
+      allOf:
+        - $ref: "#/components/schemas/Article"
+        - type: object
+          required:
+            - reason
+          properties:
+            reason:
+              type: string
+    ArticleError:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
 

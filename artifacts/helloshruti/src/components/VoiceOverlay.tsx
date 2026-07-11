@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { ConversationMessage, Article } from '@/models/types';
 import { voiceService } from '@/services/voiceService';
 import { useProfile } from '@/hooks/use-profile';
-import { aiRecommendationService } from '@/services/aiRecommendationService';
+import { listArticles } from '@workspace/api-client-react';
 import { articleService } from '@/services/articleService';
 import { X, Mic, Send, MicOff } from 'lucide-react';
 import { Button } from './ui/button';
@@ -77,26 +77,37 @@ export default function VoiceOverlay() {
     }]);
   };
 
-  const handleCommand = (text: string) => {
+  const handleCommand = async (text: string) => {
     addMessage('user', text);
     const command = voiceService.matchCommand(text);
     const profile = getProfile();
     const nickname = profile?.nickname || 'there';
 
+    if (command === 'READ_BRIEFING') {
+      try {
+        const recs = await listArticles({ interests: profile?.interests.join(','), limit: 5 });
+        let response: string;
+        if (recs.length > 0) {
+          const first = recs[0];
+          setContextArticle(first);
+          response = `Good morning, ${nickname}. I found ${recs.length} live items relevant to your interests. The first is about ${first.title}. ${first.summary}. Would you like me to read the full article or go to the next one?`;
+        } else {
+          response = `Good morning, ${nickname}. I couldn't find any new items matching your interests right now.`;
+        }
+        addMessage('shruti', response);
+        voiceService.speak(response);
+      } catch {
+        const response = `Sorry ${nickname}, I couldn't reach the live news feed just now. Please try again in a moment.`;
+        addMessage('shruti', response);
+        voiceService.speak(response);
+      }
+      return;
+    }
+
     setTimeout(() => {
       let response = '';
 
       switch (command) {
-        case 'READ_BRIEFING':
-          const recs = aiRecommendationService.getRecommendationsForUser();
-          if (recs.length > 0) {
-            const first = recs[0];
-            setContextArticle(first);
-            response = `Good morning, ${nickname}. I found ${recs.length} items relevant to your interests. The first is about ${first.title}. ${first.summary}. Would you like me to read the full article or go to the next one?`;
-          } else {
-            response = `Good morning, ${nickname}. I couldn't find any new items matching your interests right now.`;
-          }
-          break;
         case 'READ_ARTICLE':
           if (contextArticle) {
             response = `Reading ${contextArticle.title}. ${contextArticle.content}`;
@@ -126,7 +137,7 @@ export default function VoiceOverlay() {
           break;
         case 'SAVE':
           if (contextArticle) {
-            articleService.addToHistory(contextArticle.id);
+            articleService.addToHistory(contextArticle);
             response = `I've saved "${contextArticle.title}" to your history.`;
           } else {
             response = "There's no article currently open to save.";

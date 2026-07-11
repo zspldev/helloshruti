@@ -1,29 +1,38 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocation, useParams } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { articleService } from '@/services/articleService';
-import { Article } from '@/models/types';
-import { ArrowLeft, Clock, Headphones, MessageSquare, Play } from 'lucide-react';
+import { useGetArticle, getGetArticleQueryKey } from '@workspace/api-client-react';
+import { ArrowLeft, Clock, ExternalLink, MessageSquare, Play } from 'lucide-react';
 
 export default function ArticleDetail() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
-  const [article, setArticle] = useState<Article | null>(null);
+  const { data: article, isLoading, isError } = useGetArticle(id ?? '', {
+    query: { queryKey: getGetArticleQueryKey(id ?? ''), enabled: !!id },
+  });
+  const savedToHistoryRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (id) {
-      const found = articleService.getArticleById(id);
-      if (found) {
-        setArticle(found);
-        articleService.addToHistory(id);
-      }
+    if (article && savedToHistoryRef.current !== article.id) {
+      articleService.addToHistory(article);
+      savedToHistoryRef.current = article.id;
     }
-  }, [id]);
+  }, [article]);
 
-  if (!article) {
+  if (isLoading) {
     return (
       <div className="min-h-[100dvh] flex items-center justify-center bg-background">
-        <p className="text-xl">Article not found.</p>
+        <p className="text-xl text-muted-foreground">Loading article...</p>
+      </div>
+    );
+  }
+
+  if (isError || !article) {
+    return (
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background gap-4 px-6 text-center">
+        <p className="text-xl">This article has expired from the live feed cache.</p>
+        <Button onClick={() => setLocation('/')}>Back to today's reading</Button>
       </div>
     );
   }
@@ -55,6 +64,9 @@ export default function ArticleDetail() {
       </header>
 
       <main className="max-w-3xl mx-auto px-6 py-10">
+        {article.imageUrl && (
+          <img src={article.imageUrl} alt="" className="w-full h-56 md:h-72 object-cover rounded-2xl mb-8" />
+        )}
         <div className="flex flex-wrap gap-2 mb-6">
           {article.topics.map(t => (
             <span key={t} className="px-3 py-1 bg-secondary text-secondary-foreground text-sm font-medium rounded-full">
@@ -85,6 +97,15 @@ export default function ArticleDetail() {
               <p key={i}>{paragraph}</p>
             ))}
           </div>
+
+          <a
+            href={article.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 mt-8 text-lg font-medium text-primary hover:underline"
+          >
+            Read the full article on {article.source} <ExternalLink className="w-5 h-5" />
+          </a>
         </div>
       </main>
 

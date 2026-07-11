@@ -1,21 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useListArticles, getListArticlesQueryKey } from '@workspace/api-client-react';
 import { Link } from 'wouter';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useProfile } from '@/hooks/use-profile';
-import { aiRecommendationService } from '@/services/aiRecommendationService';
-import { ReadingRecommendation } from '@/models/types';
-import { Clock, Bookmark, ChevronRight, History as HistoryIcon, Mic } from 'lucide-react';
+import { Clock, Bookmark, ChevronRight, History as HistoryIcon, Mic, RefreshCw } from 'lucide-react';
 import { articleService } from '@/services/articleService';
 
 export default function Dashboard() {
   const { getProfile } = useProfile();
   const profile = getProfile();
-  const [recommendations, setRecommendations] = useState<ReadingRecommendation[]>([]);
 
-  useEffect(() => {
-    setRecommendations(aiRecommendationService.getRecommendationsForUser());
-  }, []);
+  const listParams = { interests: profile?.interests.join(','), limit: 5 };
+  const { data: recommendations = [], isLoading, isError, refetch } = useListArticles(
+    listParams,
+    { query: { queryKey: getListArticlesQueryKey(listParams), enabled: !!profile } },
+  );
 
   const openVoiceAssistant = () => {
     window.dispatchEvent(new CustomEvent('shruti:open', { detail: { autoStart: true } }));
@@ -40,15 +39,40 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-3xl mx-auto px-6 py-8">
-        <p className="text-xl text-muted-foreground mb-8">
-          I found {recommendations.length} items relevant to your interests today.
-        </p>
+        <div className="flex items-center justify-between mb-8">
+          <p className="text-xl text-muted-foreground">
+            {isLoading
+              ? 'Fetching today\'s live news for you...'
+              : `I found ${recommendations.length} live items relevant to your interests today.`}
+          </p>
+          <Button variant="ghost" size="icon" className="rounded-full shrink-0" onClick={() => refetch()} title="Refresh">
+            <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
+
+        {isError && (
+          <div className="text-center py-12 text-muted-foreground">
+            <p className="text-lg mb-4">I couldn't reach the news feed just now.</p>
+            <Button onClick={() => refetch()}>Try again</Button>
+          </div>
+        )}
+
+        {isLoading && (
+          <div className="space-y-6">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-40 rounded-2xl bg-secondary/40 animate-pulse" />
+            ))}
+          </div>
+        )}
 
         <div className="space-y-6">
           {recommendations.map((article) => (
             <Card key={article.id} className="overflow-hidden hover:shadow-md transition-shadow group relative">
               <Link href={`/article/${article.id}`}>
                 <CardContent className="p-0">
+                  {article.imageUrl && (
+                    <img src={article.imageUrl} alt="" className="w-full h-40 object-cover" />
+                  )}
                   <div className="p-6 cursor-pointer">
                     <div className="flex items-center gap-3 mb-3 text-sm font-medium text-muted-foreground">
                       <span className="text-primary bg-primary/5 px-2 py-1 rounded-md">{article.source}</span>
@@ -71,7 +95,7 @@ export default function Dashboard() {
                       <Button variant="outline" size="sm" className="rounded-full" onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('shruti:open', { detail: { articleContext: article, autoStart: true, command: 'EXPLAIN' } })); }}>
                         Explain
                       </Button>
-                      <Button variant="ghost" size="sm" className="rounded-full ml-auto text-muted-foreground" onClick={(e) => { e.preventDefault(); articleService.addToHistory(article.id); window.dispatchEvent(new CustomEvent('shruti:open', { detail: { articleContext: article, autoStart: true, command: 'SAVE' } })); }}>
+                      <Button variant="ghost" size="sm" className="rounded-full ml-auto text-muted-foreground" onClick={(e) => { e.preventDefault(); articleService.addToHistory(article); window.dispatchEvent(new CustomEvent('shruti:open', { detail: { articleContext: article, autoStart: true, command: 'SAVE' } })); }}>
                         <Bookmark className="w-4 h-4 mr-2" /> Save
                       </Button>
                     </div>

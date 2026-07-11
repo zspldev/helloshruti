@@ -15,9 +15,10 @@ export interface Article {
   summary: string;
   content: string;
   source: string;
+  url: string;
   date: string;
-  relevanceIndicator: string;
   estimatedReadingTime: string;
+  imageUrl?: string | null;
   topics: string[];
 }
 
