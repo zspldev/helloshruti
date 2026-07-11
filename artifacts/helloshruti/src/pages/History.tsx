@@ -28,7 +28,7 @@ export default function History() {
     <div className="min-h-[100dvh] bg-background">
       <header className="px-6 py-6 border-b border-border bg-white sticky top-0 z-10">
         <div className="max-w-3xl mx-auto flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => setLocation('/')} className="shrink-0 rounded-full h-12 w-12 hover:bg-secondary">
+          <Button variant="ghost" size="icon" onClick={() => setLocation('/dashboard')} className="shrink-0 rounded-full h-12 w-12 hover:bg-secondary">
             <ArrowLeft className="w-6 h-6" />
           </Button>
           <h1 className="text-2xl font-serif text-primary">Things I've Read</h1>
@@ -43,7 +43,7 @@ export default function History() {
             </div>
             <h2 className="text-2xl font-serif text-foreground mb-3">No reading history yet</h2>
             <p className="text-lg text-muted-foreground mb-8">Items you read will appear here.</p>
-            <Button onClick={() => setLocation('/')} size="lg">Read Today's Briefing</Button>
+            <Button onClick={() => setLocation('/dashboard')} size="lg">Read Today's Briefing</Button>
           </div>
         ) : (
           <div className="space-y-6">

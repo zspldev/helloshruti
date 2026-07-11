@@ -32,7 +32,7 @@ export default function ArticleDetail() {
     return (
       <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background gap-4 px-6 text-center">
         <p className="text-xl">This article has expired from the live feed cache.</p>
-        <Button onClick={() => setLocation('/')}>Back to today's reading</Button>
+        <Button onClick={() => setLocation('/dashboard')}>Back to today's reading</Button>
       </div>
     );
   }
@@ -54,7 +54,7 @@ export default function ArticleDetail() {
     <div className="min-h-[100dvh] bg-background pb-32">
       <header className="px-6 py-6 border-b border-border bg-white sticky top-0 z-10">
         <div className="max-w-3xl mx-auto flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => setLocation('/')} className="shrink-0 rounded-full h-12 w-12 hover:bg-secondary">
+          <Button variant="ghost" size="icon" onClick={() => setLocation('/dashboard')} className="shrink-0 rounded-full h-12 w-12 hover:bg-secondary">
             <ArrowLeft className="w-6 h-6" />
           </Button>
           <div className="flex-1 min-w-0">

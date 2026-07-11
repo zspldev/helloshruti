@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
+import { useUser } from '@clerk/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useProfile } from '@/hooks/use-profile';
@@ -16,6 +17,7 @@ export default function Onboarding() {
   const [step, setStep] = useState(1);
   const [, setLocation] = useLocation();
   const { getProfile, saveProfile } = useProfile();
+  const { user } = useUser();
 
   const [name, setName] = useState('');
   const [nickname, setNickname] = useState('');
@@ -36,15 +38,19 @@ export default function Onboarding() {
         readingLength,
         briefingTime
       });
-      setLocation('/');
+      setLocation('/dashboard');
     }
   };
 
   useEffect(() => {
     if (getProfile()) {
-      setLocation('/');
+      setLocation('/dashboard');
+      return;
     }
-  }, []);
+    // Prefill from Clerk profile so returning users don't retype their name.
+    const fullName = user?.fullName || user?.firstName;
+    if (fullName) setName(fullName);
+  }, [user]);
 
   const toggleInterest = (topic: string) => {
     if (interests.includes(topic)) {

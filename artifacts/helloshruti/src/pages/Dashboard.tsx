@@ -1,14 +1,16 @@
 import { useListArticles, getListArticlesQueryKey } from '@workspace/api-client-react';
 import { Link } from 'wouter';
+import { useClerk } from '@clerk/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useProfile } from '@/hooks/use-profile';
-import { Clock, Bookmark, ChevronRight, History as HistoryIcon, Mic, RefreshCw } from 'lucide-react';
+import { Clock, Bookmark, ChevronRight, History as HistoryIcon, Mic, RefreshCw, LogOut } from 'lucide-react';
 import { articleService } from '@/services/articleService';
 
 export default function Dashboard() {
   const { getProfile } = useProfile();
   const profile = getProfile();
+  const { signOut } = useClerk();
 
   const listParams = { interests: profile?.interests.join(','), limit: 5 };
   const { data: recommendations = [], isLoading, isError, refetch } = useListArticles(
@@ -32,9 +34,18 @@ export default function Dashboard() {
               Good morning, <br />{profile.nickname}
             </h1>
           </div>
-          <Link href="/history" className="p-3 bg-primary-foreground/10 hover:bg-primary-foreground/20 rounded-full transition-colors" title="Reading History">
-            <HistoryIcon className="w-6 h-6 text-primary-foreground" />
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/history" className="p-3 bg-primary-foreground/10 hover:bg-primary-foreground/20 rounded-full transition-colors" title="Reading History">
+              <HistoryIcon className="w-6 h-6 text-primary-foreground" />
+            </Link>
+            <button
+              onClick={() => signOut({ redirectUrl: '/' })}
+              className="p-3 bg-primary-foreground/10 hover:bg-primary-foreground/20 rounded-full transition-colors"
+              title="Log out"
+            >
+              <LogOut className="w-6 h-6 text-primary-foreground" />
+            </button>
+          </div>
         </div>
       </header>
 
