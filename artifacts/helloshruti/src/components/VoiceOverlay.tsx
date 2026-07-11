@@ -33,7 +33,9 @@ export default function VoiceOverlay() {
         const profile = getProfile();
         const nickname = profile?.nickname || 'there';
         if (e.detail?.command) {
-            handleCommand(e.detail.command.toLowerCase());
+            // Pass the article explicitly — setContextArticle above hasn't flushed
+            // yet, and this listener's closure can't see later renders' state.
+            handleCommand(e.detail.command.toLowerCase(), article ?? null);
         } else if (article) {
           addMessage('shruti', `I'm ready to talk about "${article.title}". What would you like to know?`);
           voiceService.speak(`I'm ready to talk about "${article.title}". What would you like to know?`);
@@ -77,11 +79,15 @@ export default function VoiceOverlay() {
     }]);
   };
 
-  const handleCommand = async (text: string) => {
+  const handleCommand = async (text: string, articleOverride?: Article | null) => {
     addMessage('user', text);
     const command = voiceService.matchCommand(text);
     const profile = getProfile();
     const nickname = profile?.nickname || 'there';
+    // Use the explicit override when provided (e.g. dispatched from a page with
+    // a known article) rather than the possibly-stale `contextArticle` state,
+    // since this function can be called from a listener registered once on mount.
+    const activeArticle = articleOverride !== undefined ? articleOverride : contextArticle;
 
     if (command === 'READ_BRIEFING') {
       try {
@@ -109,22 +115,22 @@ export default function VoiceOverlay() {
 
       switch (command) {
         case 'READ_ARTICLE':
-          if (contextArticle) {
-            response = `Reading ${contextArticle.title}. ${contextArticle.content}`;
+          if (activeArticle) {
+            response = `Reading ${activeArticle.title}. ${activeArticle.content}`;
           } else {
             response = "I don't have a specific article open right now. Would you like me to read your briefing?";
           }
           break;
         case 'SUMMARIZE':
-          if (contextArticle) {
-            response = `Here is a summary of ${contextArticle.title}: ${contextArticle.summary}`;
+          if (activeArticle) {
+            response = `Here is a summary of ${activeArticle.title}: ${activeArticle.summary}`;
           } else {
             response = "I don't have a specific article open right now to summarize.";
           }
           break;
         case 'EXPLAIN':
-          if (contextArticle) {
-            response = `Certainly, ${nickname}. This article discusses ${contextArticle.title}. In simple terms, it means that ${contextArticle.summary} It is highly relevant to your interest in ${contextArticle.topics[0]}.`;
+          if (activeArticle) {
+            response = `Certainly, ${nickname}. This article discusses ${activeArticle.title}. In simple terms, it means that ${activeArticle.summary} It is highly relevant to your interest in ${activeArticle.topics[0]}.`;
           } else {
             response = "I need an article context to explain further.";
           }
@@ -136,9 +142,9 @@ export default function VoiceOverlay() {
           response = "Let me repeat that."; // In a full app, this would repeat the last Shruti message
           break;
         case 'SAVE':
-          if (contextArticle) {
-            articleService.addToHistory(contextArticle);
-            response = `I've saved "${contextArticle.title}" to your history.`;
+          if (activeArticle) {
+            articleService.addToHistory(activeArticle);
+            response = `I've saved "${activeArticle.title}" to your history.`;
           } else {
             response = "There's no article currently open to save.";
           }
