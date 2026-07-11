@@ -1,0 +1,249 @@
+For Replit, I would avoid asking it to build the entire AI system. A better approach is to ask it to build a functional MVP shell with the right architecture: PWA, user profile, reading dashboard, voice interaction layer, and placeholders for AI services.
+
+Here is a prompt you can paste into Replit Agent:
+
+Build an MVP Progressive Web App called HelloShruti — a voice-first personal reading assistant.
+
+Product Vision
+
+HelloShruti is an AI knowledge companion for senior professionals who consume large amounts of information but may have difficulty reading for long periods. It helps users decide what to read, summarizes content, and provides a conversational voice interface.
+
+The MVP should demonstrate the core experience, not a production-scale system.
+
+Technology Requirements
+
+* Build as a PWA (installable web app)
+* Use React + TypeScript
+* Use a clean modern UI optimized for senior users:
+    * large fonts
+    * high contrast
+    * minimal buttons
+    * simple navigation
+* Responsive design for desktop and mobile
+* Prepare architecture for future GPT Realtime API integration
+
+Core MVP Features
+
+1. User Profile Setup
+
+Create an onboarding flow:
+
+Step 1:
+Ask user’s name.
+
+Step 2:
+Ask preferred language:
+
+* English (MVP)
+* Marathi (coming soon)
+* Hindi (coming soon)
+
+Step 3:
+Ask “What topics are important to you?”
+
+Allow selecting up to 5 interests:
+Examples:
+
+* Taxation
+* GST
+* Finance
+* Business
+* Government policies
+* Skill development
+* Social sector
+* Technology
+* Maharashtra news
+
+Step 4:
+Ask reading preferences:
+
+* Morning briefing time
+* Preferred reading length:
+    * Quick summary (2 minutes)
+    * Detailed summary (5 minutes)
+    * Full article
+
+Save profile locally initially.
+
+⸻
+
+2. Daily Reading Dashboard
+
+Create a home screen called:
+
+“Today’s Reading”
+
+Display sample AI-generated recommendations:
+
+Example:
+
+Good morning, Mr. Kulkarni.
+
+I found 5 items relevant to your interests.
+
+Card 1:
+Title:
+“New GST Compliance Rules Announced”
+
+Show:
+
+* Source
+* Date
+* Relevance score
+* Estimated reading time
+
+Actions:
+
+* Listen
+* Summary
+* Explain
+* Save
+
+Card 2:
+Similar format.
+
+Use mock data initially.
+
+⸻
+
+3. Voice Assistant Interface
+
+Create a prominent microphone button.
+
+When clicked:
+
+Open voice conversation mode.
+
+For MVP:
+
+* Use browser speech recognition API for speech-to-text
+* Use browser text-to-speech API for responses
+
+Prepare a service abstraction so it can later be replaced by GPT Realtime API.
+
+Supported voice commands:
+
+“Read today’s briefing”
+
+“Read this article”
+
+“Summarize”
+
+“Explain”
+
+“Next”
+
+“Repeat”
+
+“Save this”
+
+“Stop”
+
+The assistant should respond naturally.
+
+Example:
+
+User:
+“Read today’s briefing”
+
+Assistant:
+“Good morning. I found five items relevant to your interests. The first is about GST changes…”
+
+⸻
+
+4. Article Reading View
+
+Create a page where a user can:
+
+* View article title
+* View summary
+* Listen to article
+* Ask questions
+
+Include:
+
+“Talk about this article”
+
+button.
+
+This will later connect to GPT Realtime.
+
+⸻
+
+5. Reading Memory
+
+Create a simple history page:
+
+“Things I have read”
+
+Store:
+
+* Article title
+* Date read
+* Topics
+* User notes
+
+⸻
+
+Architecture Requirements
+
+Create separate modules:
+
+/components
+/pages
+/services
+/models
+
+Create interfaces for:
+
+UserProfile
+Article
+ReadingRecommendation
+ConversationMessage
+
+Create placeholder services:
+
+aiRecommendationService
+voiceService
+articleService
+
+so real APIs can be integrated later.
+
+⸻
+
+Future Integration Notes
+
+Keep clear extension points for:
+
+* GPT Realtime API
+* RAG-based document search
+* Web article ingestion
+* PDF upload
+* Indian language support
+* Personalized recommendation engine
+
+⸻
+
+Deliverable
+
+A working PWA prototype where a user can:
+
+1. Create a profile
+2. See personalized reading recommendations
+3. Press a button and talk to HelloShruti
+4. Hear content read aloud
+5. Save and revisit reading history
+
+Focus on excellent user experience and architecture rather than backend complexity.
+
+A couple of additional suggestions for your Replit iteration:
+
+1. First build with browser speech APIs, not GPT Realtime. You will validate the UX much faster.
+2. Once the “conversation loop” feels right, replace the voice layer with GPT Realtime.
+3. Keep the name HelloShruti visible in the UI from day one—the personality is part of the product, not just branding.
+
+For a first demo to the CA, the “wow moment” should be:
+
+He opens HelloShruti → says “Good morning” → Shruti replies → “I found three things worth your attention today” → starts reading.
+
+That will communicate the vision far better than a feature-heavy prototype.
