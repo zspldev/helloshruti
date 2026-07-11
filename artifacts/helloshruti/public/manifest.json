@@ -1,0 +1,21 @@
+{
+  "name": "HelloShruti",
+  "short_name": "HelloShruti",
+  "description": "Voice-first personal reading companion for professionals.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FBF9F6",
+  "theme_color": "#1E3F20",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
