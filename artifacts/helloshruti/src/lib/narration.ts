@@ -28,5 +28,8 @@ export function getExplainText(article: Article, nickname = 'there'): string {
 }
 
 export function getFullReadText(article: Article): string {
+  if (!article.fullTextAvailable) {
+    return `${article.title}. ${article.content} The full article isn't available to read out in full — you can open it on ${article.source} instead.`;
+  }
   return `${article.title}. ${article.content}`;
 }

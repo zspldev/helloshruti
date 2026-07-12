@@ -20,6 +20,7 @@ export interface Article {
   url: string;
   date: string;
   estimatedReadingTime: string;
+  fullTextAvailable: boolean;
   imageUrl?: string | null;
   topics: string[];
 }

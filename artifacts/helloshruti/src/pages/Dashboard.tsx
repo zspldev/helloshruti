@@ -208,7 +208,9 @@ export default function Dashboard() {
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              Full Article · {article.estimatedReadingTime}
+                              {article.fullTextAvailable
+                                ? `Full Article · ${article.estimatedReadingTime}`
+                                : `Preview only · ${article.source} blocks full text`}
                             </TooltipContent>
                           </Tooltip>
                         </div>

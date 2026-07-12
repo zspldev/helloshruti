@@ -11,6 +11,7 @@ export interface LiveArticle {
   url: string;
   date: string;
   estimatedReadingTime: string;
+  fullTextAvailable: boolean;
   imageUrl: string | null;
   topics: string[];
 }
@@ -40,7 +41,8 @@ const TOPIC_QUERY_SUFFIX: Record<string, string> = {
 };
 
 const TOPIC_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
-const ARTICLE_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+const ARTICLE_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours, once we have real full text
+const FAILED_ENRICH_RETRY_MS = 15 * 60 * 1000; // retry sooner when scraping failed, sites/CDNs vary over time
 
 interface TopicCacheEntry {
   fetchedAt: number;
@@ -129,13 +131,15 @@ async function fetchFullArticleText(url: string): Promise<string | null> {
 
 async function enrichArticle(article: LiveArticle): Promise<LiveArticle> {
   const fullText = await fetchFullArticleText(article.url);
-  if (!fullText) return article;
+  logger.info({ url: article.url, fullTextLen: fullText?.length ?? 0 }, "DEBUG enrichArticle result");
+  if (!fullText) return { ...article, fullTextAvailable: false };
 
   return {
     ...article,
     summary: firstSentences(fullText, 2) || article.summary,
     content: fullText,
     estimatedReadingTime: estimateReadingTime(fullText),
+    fullTextAvailable: true,
   };
 }
 
@@ -187,6 +191,7 @@ async function fetchTopicFromBingNews(topic: string): Promise<LiveArticle[]> {
       url: link,
       date: new Date(pubDate).toISOString(),
       estimatedReadingTime: estimateReadingTime(summary),
+      fullTextAvailable: false,
       imageUrl,
       topics: [topic],
     };
@@ -247,7 +252,8 @@ export async function listRecommendations(
   const enriched = await Promise.all(
     picked.map(async ({ article, reason }) => {
       const existing = articleStore.get(article.id);
-      const isFresh = existing && Date.now() - existing.storedAt < ARTICLE_CACHE_TTL_MS;
+      const freshnessWindow = existing?.article.fullTextAvailable ? ARTICLE_CACHE_TTL_MS : FAILED_ENRICH_RETRY_MS;
+      const isFresh = existing && Date.now() - existing.storedAt < freshnessWindow;
       const full = isFresh ? existing.article : await enrichArticle(article);
       articleStore.set(article.id, { article: full, storedAt: Date.now() });
       return { ...full, reason };

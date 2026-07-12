@@ -18,6 +18,8 @@ export interface Article {
   url: string;
   date: string;
   estimatedReadingTime: string;
+  /** Whether `content` is the real full article text. When the publisher blocks scraping or paywalls the page, this is false and `content` falls back to the short RSS summary. */
+  fullTextAvailable: boolean;
   /** @nullable */
   imageUrl?: string | null;
   topics: string[];

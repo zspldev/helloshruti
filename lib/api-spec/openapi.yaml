@@ -102,6 +102,7 @@ components:
         - url
         - date
         - estimatedReadingTime
+        - fullTextAvailable
         - topics
       properties:
         id:
@@ -120,6 +121,12 @@ components:
           type: string
         estimatedReadingTime:
           type: string
+        fullTextAvailable:
+          type: boolean
+          description: >-
+            Whether `content` is the real full article text. When the publisher blocks
+            scraping or paywalls the page, this is false and `content` falls back to the
+            short RSS summary.
         imageUrl:
           type: ["string", "null"]
         topics:

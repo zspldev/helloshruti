@@ -3,7 +3,7 @@ import { useLocation, useParams } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { articleService } from '@/services/articleService';
 import { useGetArticle, getGetArticleQueryKey } from '@workspace/api-client-react';
-import { ArrowLeft, Clock, ExternalLink, MessageSquare, Play } from 'lucide-react';
+import { ArrowLeft, Clock, ExternalLink, MessageSquare, Play, Info } from 'lucide-react';
 
 export default function ArticleDetail() {
   const { id } = useParams<{ id: string }>();
@@ -91,7 +91,17 @@ export default function ArticleDetail() {
           <p className="lead text-2xl font-serif text-primary/90 mb-8 leading-relaxed">
             {article.summary}
           </p>
-          
+
+          {!article.fullTextAvailable && (
+            <div className="not-prose flex items-start gap-3 p-4 mb-8 rounded-xl bg-secondary/50 border border-border text-base text-muted-foreground">
+              <Info className="w-5 h-5 shrink-0 mt-0.5 text-primary" />
+              <span>
+                {article.source} doesn't let us pull the full article text, so this is the preview we have.
+                Open the original link below to read the rest.
+              </span>
+            </div>
+          )}
+
           <div className="space-y-6 text-xl leading-relaxed">
             {article.content.split('\n\n').map((paragraph, i) => (
               <p key={i}>{paragraph}</p>
