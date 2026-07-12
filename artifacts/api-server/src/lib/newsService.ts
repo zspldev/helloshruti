@@ -21,6 +21,11 @@ export interface LiveArticle {
   imageUrl: string | null;
   topics: string[];
   language: ContentLanguage;
+  // The language the content was originally published/sourced in, before any
+  // translation. Equal to `language` unless this article was translated from
+  // the English base set (e.g. Hindi/Marathi articles that had no genuine
+  // native-script coverage and were LLM-translated from English).
+  originalLanguage: ContentLanguage;
 }
 
 export interface LiveRecommendation extends LiveArticle {
@@ -339,6 +344,10 @@ async function fetchTopicFromBingNews(topic: string, language: ContentLanguage):
       imageUrl,
       topics: [topic],
       language,
+      // fetchTopicFromBingNews returns content genuinely sourced in `language`
+      // (either the English base fetch, or a verified native-script fetch) —
+      // never a translation, so original and current language always match here.
+      originalLanguage: language,
     };
   });
 }

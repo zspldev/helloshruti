@@ -44,7 +44,8 @@ export const ListArticlesResponseItem = zod.object({
   "aiExpanded": zod.boolean().describe('Whether `content` is an AI-generated expanded read (not the publisher\'s original text) produced because the real full text could not be scraped. Must be clearly labeled as AI-generated when shown to users.'),
   "imageUrl": zod.string().nullish(),
   "topics": zod.array(zod.string()),
-  "language": zod.enum(['en', 'mr', 'hi']).describe('Supported content and narration language codes.')
+  "language": zod.enum(['en', 'mr', 'hi']).describe('Supported content and narration language codes.'),
+  "originalLanguage": zod.enum(['en', 'mr', 'hi']).describe('Supported content and narration language codes.').describe('The language the article\'s content was originally published\/sourced in, before any translation. Equal to `language` unless this article was translated (e.g. an English source translated into Hindi or Marathi).')
 }).describe('A real, live news article sourced from the web.').and(zod.object({
   "reason": zod.string()
 })).describe('An article paired with the reason it was recommended.')
@@ -72,7 +73,8 @@ export const GetArticleResponse = zod.object({
   "aiExpanded": zod.boolean().describe('Whether `content` is an AI-generated expanded read (not the publisher\'s original text) produced because the real full text could not be scraped. Must be clearly labeled as AI-generated when shown to users.'),
   "imageUrl": zod.string().nullish(),
   "topics": zod.array(zod.string()),
-  "language": zod.enum(['en', 'mr', 'hi']).describe('Supported content and narration language codes.')
+  "language": zod.enum(['en', 'mr', 'hi']).describe('Supported content and narration language codes.'),
+  "originalLanguage": zod.enum(['en', 'mr', 'hi']).describe('Supported content and narration language codes.').describe('The language the article\'s content was originally published\/sourced in, before any translation. Equal to `language` unless this article was translated (e.g. an English source translated into Hindi or Marathi).')
 }).describe('A real, live news article sourced from the web.')
 
 

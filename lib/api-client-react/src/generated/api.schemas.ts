@@ -41,6 +41,8 @@ export interface Article {
   imageUrl?: string | null;
   topics: string[];
   language: ContentLanguage;
+  /** The language the article's content was originally published/sourced in, before any translation. Equal to `language` unless this article was translated (e.g. an English source translated into Hindi or Marathi). */
+  originalLanguage: ContentLanguage;
 }
 
 /**

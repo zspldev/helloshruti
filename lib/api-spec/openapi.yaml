@@ -145,6 +145,7 @@ components:
         - aiExpanded
         - topics
         - language
+        - originalLanguage
       properties:
         id:
           type: string
@@ -181,6 +182,13 @@ components:
             type: string
         language:
           $ref: "#/components/schemas/ContentLanguage"
+        originalLanguage:
+          allOf:
+            - $ref: "#/components/schemas/ContentLanguage"
+          description: >-
+            The language the article's content was originally published/sourced in,
+            before any translation. Equal to `language` unless this article was
+            translated (e.g. an English source translated into Hindi or Marathi).
     ReadingRecommendation:
       type: object
       description: An article paired with the reason it was recommended.

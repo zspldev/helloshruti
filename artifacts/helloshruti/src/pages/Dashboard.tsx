@@ -21,10 +21,12 @@ import {
   BookOpenText,
   Headphones,
   Eye,
+  Languages,
 } from 'lucide-react';
 import { Article } from '@/models/types';
 import { articleService } from '@/services/articleService';
 import { getExplainText, getSummaryText, estimateSeconds, formatDuration } from '@/lib/narration';
+import { languageLabel } from '@/lib/language';
 import { FEATURES } from '@/config/features';
 
 type Mode = 'read' | 'listen';
@@ -173,6 +175,18 @@ export default function Dashboard() {
                       <div className="flex items-center gap-3 mb-3 text-sm font-medium text-muted-foreground">
                         <span className="text-primary bg-primary/5 px-2 py-1 rounded-md">{article.source}</span>
                         <span className="flex items-center gap-1"><Clock className="w-4 h-4"/> {article.estimatedReadingTime}</span>
+                        {article.originalLanguage !== article.language && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="flex items-center gap-1 text-muted-foreground/80">
+                                <Languages className="w-4 h-4" /> Translated from {languageLabel(article.originalLanguage)}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Originally published in {languageLabel(article.originalLanguage)}, translated to {languageLabel(article.language)}
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                       </div>
                       <h2 className="text-2xl font-serif text-foreground leading-snug mb-3">
                         {article.title}

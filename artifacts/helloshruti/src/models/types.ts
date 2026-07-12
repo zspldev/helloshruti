@@ -29,6 +29,7 @@ export interface Article {
   imageUrl?: string | null;
   topics: string[];
   language: LanguageCode;
+  originalLanguage: LanguageCode;
 }
 
 export interface ReadingRecommendation extends Article {
