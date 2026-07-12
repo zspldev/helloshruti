@@ -155,8 +155,8 @@ function LandingPage() {
           </Button>
         </div>
       </div>
-      <div className="flex items-center justify-center gap-2 pb-10 text-muted-foreground">
-        <BookOpen className="w-5 h-5" />
+      <div className="flex items-start justify-center gap-2 px-6 pb-10 text-muted-foreground text-center">
+        <BookOpen className="w-5 h-5 shrink-0 mt-0.5" />
         <span>Live news, always in your language of choice.</span>
       </div>
       <AppFooter />
