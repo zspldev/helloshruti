@@ -26,7 +26,7 @@ const BROWSER_SPEECH_LANG: Record<LanguageCode, string> = {
 // TTS provider's audio file, or through the browser's speechSynthesis fallback.
 let currentAudio: HTMLAudioElement | null = null;
 
-function speakWithBrowserTts(text: string, language: LanguageCode, onEnd?: () => void): void {
+function speakWithBrowserTts(text: string, language: LanguageCode, onEnd?: () => void, onStart?: () => void): void {
   if (!('speechSynthesis' in window)) {
     if (onEnd) onEnd();
     return;
@@ -53,6 +53,9 @@ function speakWithBrowserTts(text: string, language: LanguageCode, onEnd?: () =>
   if (onEnd) {
     utterance.onend = onEnd;
   }
+  if (onStart) {
+    utterance.onstart = onStart;
+  }
 
   window.speechSynthesis.speak(utterance);
 }
@@ -66,7 +69,13 @@ export const voiceService = {
   // human-like Indic-language voices) first; if that request fails for any
   // reason (network, provider outage, misconfigured key) it falls back to the
   // browser's built-in speechSynthesis so narration never silently breaks.
-  speak: (text: string, language: LanguageCode = 'en', onEnd?: () => void): void => {
+  //
+  // The backend call is not cached and can take several seconds (observed
+  // 8-9s) for longer text, so `onStart` fires only once audio is actually
+  // playing — callers use it to stop showing a "buffering" state, since
+  // without it the UI can look like it's already playing while it's really
+  // still silently fetching, which reads as "no sound at all" to the user.
+  speak: (text: string, language: LanguageCode = 'en', onEnd?: () => void, onStart?: () => void): void => {
     voiceService.stopSpeaking();
 
     synthesizeSpeechApi({ text, language })
@@ -79,15 +88,18 @@ export const voiceService = {
         };
         audio.onerror = () => {
           if (currentAudio === audio) currentAudio = null;
-          speakWithBrowserTts(text, language, onEnd);
+          speakWithBrowserTts(text, language, onEnd, onStart);
         };
-        audio.play().catch(() => {
-          currentAudio = null;
-          speakWithBrowserTts(text, language, onEnd);
-        });
+        audio
+          .play()
+          .then(() => onStart?.())
+          .catch(() => {
+            currentAudio = null;
+            speakWithBrowserTts(text, language, onEnd, onStart);
+          });
       })
       .catch(() => {
-        speakWithBrowserTts(text, language, onEnd);
+        speakWithBrowserTts(text, language, onEnd, onStart);
       });
   },
 

@@ -13,6 +13,7 @@ import {
   ChevronUp,
   ChevronDown,
   Headphones,
+  Loader2,
 } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -45,6 +46,11 @@ export default function ListenPlayer() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [mode, setMode] = useState<ListenMode>('full');
   const [isPlaying, setIsPlaying] = useState(false);
+  // True from the moment "play" is requested until audio actually starts —
+  // the backend TTS call is uncached and can take several seconds, so without
+  // this the player looked like it was already playing while it was really
+  // still silently fetching, which read as "no sound at all" on first use.
+  const [isBuffering, setIsBuffering] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [finished, setFinished] = useState(false);
   // Collapsed by default: this is a compact "now playing" dock, not a takeover
@@ -77,13 +83,22 @@ export default function ListenPlayer() {
     setElapsed(0);
     setFinished(false);
     setIsPlaying(true);
-    voiceService.speak(getModeText(article, m), article.language, () => {
-      clearTicker();
-      setIsPlaying(false);
-      setFinished(true);
-      setElapsed(estimateSeconds(getModeText(article, m)));
-    });
-    startTicker();
+    setIsBuffering(true);
+    voiceService.speak(
+      getModeText(article, m),
+      article.language,
+      () => {
+        clearTicker();
+        setIsPlaying(false);
+        setIsBuffering(false);
+        setFinished(true);
+        setElapsed(estimateSeconds(getModeText(article, m)));
+      },
+      () => {
+        setIsBuffering(false);
+        startTicker();
+      },
+    );
   };
 
   useEffect(() => {
@@ -237,7 +252,7 @@ export default function ListenPlayer() {
             </div>
             <div className="min-w-0">
               <p data-testid="listen-player-mode" className="text-[11px] font-semibold uppercase tracking-wide text-primary-foreground/70 truncate">
-                {MODE_LABEL[mode]} &middot; {currentArticle.source}
+                {isBuffering ? "Loading Shruti's voice..." : `${MODE_LABEL[mode]} \u00b7 ${currentArticle.source}`}
               </p>
               <p data-testid="listen-player-title" className="text-sm font-serif leading-snug truncate">{currentArticle.title}</p>
             </div>
@@ -260,11 +275,18 @@ export default function ListenPlayer() {
             <Button
               size="icon"
               onClick={togglePlayPause}
-              className="rounded-full w-9 h-9 bg-primary-foreground text-primary hover:bg-primary-foreground/90"
-              title={isPlaying ? 'Pause' : 'Play'}
-              aria-label={isPlaying ? 'Pause' : 'Play'}
+              disabled={isBuffering}
+              className="rounded-full w-9 h-9 bg-primary-foreground text-primary hover:bg-primary-foreground/90 disabled:opacity-70"
+              title={isBuffering ? "Loading Shruti's voice..." : isPlaying ? 'Pause' : 'Play'}
+              aria-label={isBuffering ? "Loading Shruti's voice" : isPlaying ? 'Pause' : 'Play'}
             >
-              {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+              {isBuffering ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : isPlaying ? (
+                <Pause className="w-4 h-4" />
+              ) : (
+                <Play className="w-4 h-4" />
+              )}
             </Button>
 
             <Button
