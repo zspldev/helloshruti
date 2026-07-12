@@ -27,6 +27,7 @@ import { Article } from '@/models/types';
 import { articleService } from '@/services/articleService';
 import { getExplainText, getSummaryText, estimateSeconds, formatDuration } from '@/lib/narration';
 import { languageLabel } from '@/lib/language';
+import { formatLongDate } from '@/lib/date';
 import { FEATURES } from '@/config/features';
 import ShrutiAvatar from '@/components/ShrutiAvatar';
 import UserName from '@/components/UserName';
@@ -44,7 +45,7 @@ export default function Dashboard() {
   // "Read" shows Explain/Summary inline on the card; "Listen" speaks them through
   // the voice overlay. Full Read always opens the article page in Read mode, and
   // reads it aloud through the overlay in Listen mode.
-  const [mode, setMode] = useState<Mode>('read');
+  const [mode, setMode] = useState<Mode>('listen');
   const [openPanel, setOpenPanel] = useState<{ articleId: string; type: PanelType } | null>(null);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
 
@@ -117,7 +118,9 @@ export default function Dashboard() {
           <div className="flex items-center gap-3 min-w-0">
             <ShrutiAvatar className="w-10 h-10 ring-2 ring-primary-foreground/30" />
             <div className="min-w-0">
-              <p className="text-primary-foreground/70 font-medium tracking-wide uppercase text-xs">Today's Reading</p>
+              <p className="text-primary-foreground/70 font-medium tracking-wide uppercase text-xs">
+                Today's Reading · {formatLongDate(new Date())}
+              </p>
               <h1 className="text-xl md:text-2xl font-serif leading-snug truncate">
                 Good morning{profile.nickname ? `, ${profile.nickname}` : ''}
               </h1>
