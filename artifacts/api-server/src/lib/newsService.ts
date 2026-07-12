@@ -44,7 +44,11 @@ const TOPIC_QUERY_SUFFIX: Record<string, string> = {
   "Skill development": "India skill development",
   "Social sector": "India social sector",
   Technology: "India technology",
-  "Maharashtra news": "Maharashtra",
+  // A bare "Maharashtra" query paired with mkt=mr-IN reproducibly returns zero
+  // Bing News results (works fine alone or with any other market/query
+  // combination) — this is what caused Marathi-language users to see no
+  // content for this topic. Widening the query avoids that dead combination.
+  "Maharashtra news": "Maharashtra India",
 };
 
 // Bing News RSS market codes per content language — this is what actually
