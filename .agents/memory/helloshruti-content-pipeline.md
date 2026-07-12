@@ -1,6 +1,6 @@
 ---
 name: HelloShruti article content pipeline
-description: How full-article fetching, AI-expanded fallback, and its caching/retry logic work — read before touching newsService.ts.
+description: How full-article fetching, AI-expanded fallback, multi-language translation, and its caching/retry logic work — read before touching newsService.ts.
 ---
 
 Content tiers for an article's `content` field, in order of preference: (1) real scraped
@@ -25,3 +25,29 @@ substantial read without leaving the app or fabricating attributed quotes/report
   reasoning before visible output — a low budget (e.g. 700) can silently return empty content
   for tasks that need several paragraphs. Use a generous budget (8192) for generation tasks
   with these models, not just short-answer chat.
+
+## Non-English content: translate, don't rely on Bing's per-language index
+
+Bing News' RSS index coverage varies wildly by language and isn't just an `mkt`/`setlang`
+ranking knob — querying with `mkt=mr-IN` (Marathi) returns real Devanagari results for some
+narrow topics (e.g. "Maharashtra") but **zero results for almost every other query**, in
+either English or Devanagari script. Meanwhile English-keyword queries with a non-English
+`mkt` don't error or come back empty — they silently return ordinary English-language
+articles tagged as if they were in that market. The net effect: a naive per-language Bing
+query looks like it's working (200 OK, articles returned) but silently serves English content
+to non-English users. Hindi (`hi-IN`) happens to have decent native coverage; Marathi does not.
+
+**Why:** this is a real Bing index gap, not a query-construction bug — confirmed by testing
+the same topics with English and native-script queries across every default topic.
+
+**How to apply:** the content pipeline always sources articles in English from Bing (one
+shared per-topic cache), then machine-translates title/summary (batched, one LLM call per
+topic) and full content into the reader's language when it isn't English. Full-article
+enrichment for non-English readers always goes through the AI-expansion step — grounded in
+the real scraped English text when available, for a faithful translation/summary rather than
+a heading-only guess — never returned as verbatim scraped text. Translated articles get an
+`id` suffixed with the language code (e.g. `<hash>-mr`) since the underlying English article
+shares one Bing-derived hash; without the suffix, translations for different languages would
+collide/clobber each other's cached entries under the same id. Do not add a new supported
+language without first confirming Bing actually has index coverage for it, or route it through
+this same translate-from-English path by default.

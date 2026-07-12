@@ -180,13 +180,29 @@ async function fetchFullArticleText(url: string): Promise<string | null> {
  * AI-generated, not the publisher's reporting — it exists so readers get more
  * than a one-line teaser without leaving the app.
  */
-async function generateAiExpandedContent(article: LiveArticle): Promise<string | null> {
+async function generateAiExpandedContent(article: LiveArticle, sourceText?: string): Promise<string | null> {
   const languageName = LANGUAGE_NAME[article.language];
   const languageInstruction =
     article.language === "en"
       ? ""
       : ` Write entirely in ${languageName}, using natural ${languageName} script (not transliterated English), ` +
         `as a native ${languageName}-speaking journalist would.`;
+
+  // When we have the real scraped article text, ground the rewrite in it (faithful
+  // translation/summary of real reporting) instead of inventing background from just
+  // the headline — this is both more accurate and how non-English readers get access
+  // to English-only source coverage (e.g. Marathi, where Bing's news index has almost
+  // no native-language articles to begin with).
+  const hasSource = !!sourceText;
+  const task = hasSource
+    ? "You are given the full text of a news article. Rewrite it as a faithful, well-structured " +
+      "explainer for a reading app: preserve the real facts, quotes, and figures from the source " +
+      "text, in clear plain language. Do not invent facts not present in the source."
+    : "You expand short news headlines and summaries into a longer, well-structured explainer for a " +
+      "reading app. You do not have access to the original article text, so never invent specific " +
+      "quotes, numbers, or claims attributed to named people that aren't in the given summary. Instead, " +
+      "explain relevant background, context, and likely implications of the topic in clear, plain language.";
+
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-5-mini",
@@ -195,15 +211,14 @@ async function generateAiExpandedContent(article: LiveArticle): Promise<string |
         {
           role: "system",
           content:
-            "You expand short news headlines and summaries into a longer, well-structured explainer for a reading app. " +
-            "You do not have access to the original article text, so never invent specific quotes, numbers, or claims " +
-            "attributed to named people that aren't in the given summary. Instead, explain relevant background, context, " +
-            "and likely implications of the topic in clear, plain language. Write 4-6 short paragraphs. Do not mention " +
-            `that you lack the full article or add disclaimers — just write the explainer.${languageInstruction}`,
+            `${task} Write 4-6 short paragraphs. Do not mention that you lack the full article or add ` +
+            `disclaimers — just write the explainer.${languageInstruction}`,
         },
         {
           role: "user",
-          content: `Headline: ${article.title}\nSummary: ${article.summary}\nTopics: ${article.topics.join(", ")}\nSource: ${article.source}`,
+          content: hasSource
+            ? `Headline: ${article.title}\nSource article text: ${sourceText}`
+            : `Headline: ${article.title}\nSummary: ${article.summary}\nTopics: ${article.topics.join(", ")}\nSource: ${article.source}`,
         },
       ],
     });
@@ -218,7 +233,11 @@ async function generateAiExpandedContent(article: LiveArticle): Promise<string |
 
 async function enrichArticle(article: LiveArticle): Promise<LiveArticle> {
   const fullText = await fetchFullArticleText(article.url);
-  if (fullText) {
+
+  // English articles with a real scrape can be shown verbatim. Non-English readers
+  // always go through the AI rewrite step (grounded in the real scrape when we have
+  // one) since the underlying source text is in English, not the reader's language.
+  if (fullText && article.language === "en") {
     return {
       ...article,
       summary: firstSentences(fullText, 2) || article.summary,
@@ -229,7 +248,7 @@ async function enrichArticle(article: LiveArticle): Promise<LiveArticle> {
     };
   }
 
-  const aiText = await generateAiExpandedContent(article);
+  const aiText = await generateAiExpandedContent(article, fullText ?? undefined);
   if (aiText) {
     return {
       ...article,
@@ -257,9 +276,18 @@ function extractDirectUrl(bingLink: string): string {
   }
 }
 
-async function fetchTopicFromBingNews(topic: string, language: ContentLanguage): Promise<LiveArticle[]> {
+// Bing News' non-English indexes are extremely uneven: Hindi (hi-IN) has decent
+// coverage for India-business topics, but Marathi (mr-IN) reliably returns zero
+// items for almost every query regardless of script (confirmed by direct testing
+// across all default topics) — there just isn't a meaningful Marathi news index
+// to query. Rather than silently showing English articles to Marathi readers (the
+// bug this fixes), we always source from the rich English/en-IN index and then
+// machine-translate into the reader's language. This guarantees real, on-topic
+// content in every supported language instead of depending on per-language index
+// coverage that Bing doesn't consistently provide.
+async function fetchTopicFromBingNews(topic: string): Promise<LiveArticle[]> {
   const query = TOPIC_QUERY_SUFFIX[topic] ?? `India ${topic}`;
-  const market = LANGUAGE_MARKET[language];
+  const market = LANGUAGE_MARKET.en;
   const url = `https://www.bing.com/news/search?q=${encodeURIComponent(query)}&format=rss&mkt=${market}&setlang=${market}`;
 
   const response = await fetch(url, {
@@ -296,38 +324,118 @@ async function fetchTopicFromBingNews(topic: string, language: ContentLanguage):
       aiExpanded: false,
       imageUrl,
       topics: [topic],
-      language,
+      language: "en",
     };
   });
 }
 
-async function getArticlesForTopic(topic: string, language: ContentLanguage): Promise<LiveArticle[]> {
-  // Different languages surface entirely different articles, so the cache and
-  // dedupe keys must include language or a Marathi request could return
-  // (or corrupt the cache with) English results and vice versa.
-  const cacheKey = `${language}:${topic}`;
-  const cached = topicCache.get(cacheKey);
+/**
+ * Translate a batch of headlines/summaries into the target language in one call
+ * (cheaper and more consistent than one request per article). Falls back to the
+ * original English text for any article the model doesn't return a translation
+ * for, so a translation hiccup degrades to English rather than dropping content.
+ */
+async function translateArticleList(articles: LiveArticle[], language: ContentLanguage): Promise<LiveArticle[]> {
+  if (language === "en" || articles.length === 0) return articles;
+  const languageName = LANGUAGE_NAME[language];
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-5-mini",
+      max_completion_tokens: 8192,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content:
+            `Translate each news item's title and summary into natural, native ${languageName} ` +
+            `(using ${languageName} script, not transliterated English), as a native ${languageName} ` +
+            "news journalist would write it. Keep proper nouns, brand names, and numbers accurate. " +
+            'Respond with JSON: { "items": [{ "id": string, "title": string, "summary": string }] }, ' +
+            "one entry per input item, in the same order.",
+        },
+        {
+          role: "user",
+          content: JSON.stringify(
+            articles.map((a) => ({ id: a.id, title: a.title, summary: a.summary })),
+          ),
+        },
+      ],
+    });
+
+    const raw = response.choices[0]?.message?.content;
+    const parsed = raw ? JSON.parse(raw) : null;
+    const items: Array<{ id: string; title: string; summary: string }> = parsed?.items ?? [];
+    const byId = new Map(items.map((item) => [item.id, item]));
+
+    return articles.map((article) => {
+      // Suffix the id per language: translated articles are distinct cached entries
+      // (different title/summary/content, enriched independently) from the English
+      // base article, but share the same underlying URL/hashId — without this,
+      // fetching one language's version of a story would clobber or reuse another
+      // language's cached content for the same story under one shared id.
+      const localizedId = `${article.id}-${language}`;
+      const translated = byId.get(article.id);
+      if (!translated?.title || !translated?.summary) return { ...article, id: localizedId, language };
+      return {
+        ...article,
+        id: localizedId,
+        title: translated.title,
+        summary: translated.summary,
+        content: translated.summary,
+        language,
+      };
+    });
+  } catch (err) {
+    logger.error({ err }, "Headline/summary translation failed, falling back to English text");
+    return articles.map((article) => ({ ...article, id: `${article.id}-${language}`, language }));
+  }
+}
+
+async function getBaseArticlesForTopic(topic: string): Promise<LiveArticle[]> {
+  // The underlying article set is always sourced in English (see fetchTopicFromBingNews),
+  // so it's cached once per topic and reused for every language's translation pass.
+  const cached = topicCache.get(topic);
   if (cached && Date.now() - cached.fetchedAt < TOPIC_CACHE_TTL_MS) {
     return cached.articles;
   }
 
   try {
-    const articles = await fetchTopicFromBingNews(topic, language);
-    topicCache.set(cacheKey, { fetchedAt: Date.now(), articles });
-    for (const article of articles) {
-      // Don't clobber an already-enriched entry, and don't mark a never-attempted
-      // article as "just tried" — storedAt: 0 forces listRecommendations to treat
-      // it as stale so enrichArticle actually runs the first time it's requested.
-      if (!articleStore.has(article.id)) {
-        articleStore.set(article.id, { article, storedAt: 0 });
-      }
-    }
+    const articles = await fetchTopicFromBingNews(topic);
+    topicCache.set(topic, { fetchedAt: Date.now(), articles });
     return articles;
   } catch (err) {
     logger.error({ err, topic }, "Failed to fetch live news for topic");
     // Fall back to stale cache if we have one, otherwise an empty list.
     return cached?.articles ?? [];
   }
+}
+
+async function getArticlesForTopic(topic: string, language: ContentLanguage): Promise<LiveArticle[]> {
+  const baseArticles = await getBaseArticlesForTopic(topic);
+  if (baseArticles.length === 0) return baseArticles;
+
+  // Translated lists are cached separately per language so a Marathi/Hindi request
+  // doesn't re-translate on every call, but still invalidates on the same schedule
+  // as the underlying English source.
+  const cacheKey = `${language}:${topic}`;
+  const cached = topicCache.get(cacheKey);
+  const baseIsFresh = topicCache.get(topic)!.fetchedAt;
+  if (cached && cached.fetchedAt >= baseIsFresh && Date.now() - cached.fetchedAt < TOPIC_CACHE_TTL_MS) {
+    return cached.articles;
+  }
+
+  const articles = language === "en" ? baseArticles : await translateArticleList(baseArticles, language);
+  topicCache.set(cacheKey, { fetchedAt: Date.now(), articles });
+  for (const article of articles) {
+    // Don't clobber an already-enriched entry, and don't mark a never-attempted
+    // article as "just tried" — storedAt: 0 forces listRecommendations to treat
+    // it as stale so enrichArticle actually runs the first time it's requested.
+    if (!articleStore.has(article.id)) {
+      articleStore.set(article.id, { article, storedAt: 0 });
+    }
+  }
+  return articles;
 }
 
 export async function listRecommendations(

@@ -169,9 +169,6 @@ export default function Dashboard() {
               <Card key={article.id} className="overflow-hidden hover:shadow-md transition-shadow group relative">
                 <Link href={`/article/${article.id}`}>
                   <CardContent className="p-0">
-                    {article.imageUrl && (
-                      <img src={article.imageUrl} alt="" className="w-full h-40 object-cover" />
-                    )}
                     <div className="p-6 cursor-pointer">
                       <div className="flex items-center gap-3 mb-3 text-sm font-medium text-muted-foreground">
                         <span className="text-primary bg-primary/5 px-2 py-1 rounded-md">{article.source}</span>
