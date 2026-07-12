@@ -131,7 +131,6 @@ async function fetchFullArticleText(url: string): Promise<string | null> {
 
 async function enrichArticle(article: LiveArticle): Promise<LiveArticle> {
   const fullText = await fetchFullArticleText(article.url);
-  logger.info({ url: article.url, fullTextLen: fullText?.length ?? 0 }, "DEBUG enrichArticle result");
   if (!fullText) return { ...article, fullTextAvailable: false };
 
   return {
