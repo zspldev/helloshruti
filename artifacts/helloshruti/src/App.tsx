@@ -11,7 +11,7 @@ import { useProfile } from '@/hooks/use-profile';
 import { Button } from '@/components/ui/button';
 import { BookOpen } from 'lucide-react';
 import { FEATURES } from '@/config/features';
-import ShrutiAvatar from '@/components/ShrutiAvatar';
+import ShrutiIntro from '@/components/ShrutiIntro';
 
 import Onboarding from '@/pages/Onboarding';
 import Dashboard from '@/pages/Dashboard';
@@ -131,7 +131,7 @@ function LandingPage() {
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background">
       <div className="flex-1 flex flex-col items-center justify-center px-6 text-center max-w-2xl mx-auto">
-        <ShrutiAvatar className="w-28 h-28 md:w-32 md:h-32 mb-8 shadow-md ring-4 ring-white" />
+        <ShrutiIntro className="w-28 h-28 md:w-32 md:h-32 mb-8" />
         <h1 className="text-4xl md:text-6xl font-serif text-primary leading-tight mb-6">
           Hello. I'm Shruti.
         </h1>
