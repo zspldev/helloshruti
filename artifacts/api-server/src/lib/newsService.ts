@@ -276,18 +276,32 @@ function extractDirectUrl(bingLink: string): string {
   }
 }
 
-// Bing News' non-English indexes are extremely uneven: Hindi (hi-IN) has decent
-// coverage for India-business topics, but Marathi (mr-IN) reliably returns zero
-// items for almost every query regardless of script (confirmed by direct testing
-// across all default topics) — there just isn't a meaningful Marathi news index
-// to query. Rather than silently showing English articles to Marathi readers (the
-// bug this fixes), we always source from the rich English/en-IN index and then
-// machine-translate into the reader's language. This guarantees real, on-topic
-// content in every supported language instead of depending on per-language index
-// coverage that Bing doesn't consistently provide.
-async function fetchTopicFromBingNews(topic: string): Promise<LiveArticle[]> {
+// Bing News' non-English indexes are extremely uneven, and a non-English `mkt`
+// parameter is NOT a reliable signal on its own: querying with English keywords
+// and mkt=hi-IN/mr-IN often still returns ordinary English-script articles (just
+// re-labeled), while the same topic queried with native-script keywords can return
+// genuine native-language results for Hindi but consistently nothing for Marathi
+// (confirmed by direct testing — Bing's Marathi news index is essentially empty).
+// So "native fetch succeeded" can't be judged by result count alone — we check
+// that the returned titles are actually written in the target script, and only
+// treat it as a free native hit if they are. Anything else (including empty, or
+// English text mislabeled as hi/mr) falls back to LLM-translating the English set,
+// so translation cost is only paid when native content genuinely isn't available.
+const MIN_NATIVE_RESULTS = 1;
+const NATIVE_SCRIPT_PATTERN: Partial<Record<ContentLanguage, RegExp>> = {
+  hi: /[\u0900-\u097F]/, // Devanagari (Hindi)
+  mr: /[\u0900-\u097F]/, // Devanagari (Marathi)
+};
+
+function isNativeScript(article: LiveArticle, language: ContentLanguage): boolean {
+  const pattern = NATIVE_SCRIPT_PATTERN[language];
+  if (!pattern) return true; // no script check defined for this language (e.g. English)
+  return pattern.test(article.title);
+}
+
+async function fetchTopicFromBingNews(topic: string, language: ContentLanguage): Promise<LiveArticle[]> {
   const query = TOPIC_QUERY_SUFFIX[topic] ?? `India ${topic}`;
-  const market = LANGUAGE_MARKET.en;
+  const market = LANGUAGE_MARKET[language];
   const url = `https://www.bing.com/news/search?q=${encodeURIComponent(query)}&format=rss&mkt=${market}&setlang=${market}`;
 
   const response = await fetch(url, {
@@ -324,7 +338,7 @@ async function fetchTopicFromBingNews(topic: string): Promise<LiveArticle[]> {
       aiExpanded: false,
       imageUrl,
       topics: [topic],
-      language: "en",
+      language,
     };
   });
 }
@@ -392,41 +406,65 @@ async function translateArticleList(articles: LiveArticle[], language: ContentLa
   }
 }
 
-async function getBaseArticlesForTopic(topic: string): Promise<LiveArticle[]> {
-  // The underlying article set is always sourced in English (see fetchTopicFromBingNews),
-  // so it's cached once per topic and reused for every language's translation pass.
-  const cached = topicCache.get(topic);
+async function fetchAndCacheTopic(cacheKey: string, fetcher: () => Promise<LiveArticle[]>): Promise<LiveArticle[]> {
+  const cached = topicCache.get(cacheKey);
   if (cached && Date.now() - cached.fetchedAt < TOPIC_CACHE_TTL_MS) {
     return cached.articles;
   }
 
   try {
-    const articles = await fetchTopicFromBingNews(topic);
-    topicCache.set(topic, { fetchedAt: Date.now(), articles });
+    const articles = await fetcher();
+    topicCache.set(cacheKey, { fetchedAt: Date.now(), articles });
     return articles;
   } catch (err) {
-    logger.error({ err, topic }, "Failed to fetch live news for topic");
+    logger.error({ err, cacheKey }, "Failed to fetch live news for topic");
     // Fall back to stale cache if we have one, otherwise an empty list.
     return cached?.articles ?? [];
   }
 }
 
+// English is cached once per topic and reused as the translation source for every
+// other language, so a Marathi + Hindi request in the same window doesn't refetch it twice.
+async function getBaseArticlesForTopic(topic: string): Promise<LiveArticle[]> {
+  return fetchAndCacheTopic(topic, () => fetchTopicFromBingNews(topic, "en"));
+}
+
 async function getArticlesForTopic(topic: string, language: ContentLanguage): Promise<LiveArticle[]> {
+  if (language === "en") return getBaseArticlesForTopic(topic);
+
+  // Try the reader's own-language Bing market first — it's a free RSS call, and it's
+  // what actually serves most Hindi requests since Bing's hi-IN index has real coverage.
+  // Only pay for an LLM translation of the English set when the native query comes back
+  // empty/too thin (this is what actually happens for Marathi, which has near-zero
+  // native coverage across topics).
+  const nativeCacheKey = `${language}:${topic}:native`;
+  const native = await fetchAndCacheTopic(nativeCacheKey, () => fetchTopicFromBingNews(topic, language));
+  const genuineNative = native.filter((article) => isNativeScript(article, language));
+  if (genuineNative.length >= MIN_NATIVE_RESULTS) {
+    registerArticles(genuineNative);
+    return genuineNative;
+  }
+
   const baseArticles = await getBaseArticlesForTopic(topic);
   if (baseArticles.length === 0) return baseArticles;
 
-  // Translated lists are cached separately per language so a Marathi/Hindi request
-  // doesn't re-translate on every call, but still invalidates on the same schedule
-  // as the underlying English source.
-  const cacheKey = `${language}:${topic}`;
+  // Translated lists are cached separately per language so a Marathi request doesn't
+  // re-translate on every call, but still invalidates on the same schedule as the
+  // underlying English source (a stale translation cache is dropped if English refreshed).
+  const cacheKey = `${language}:${topic}:translated`;
   const cached = topicCache.get(cacheKey);
-  const baseIsFresh = topicCache.get(topic)!.fetchedAt;
-  if (cached && cached.fetchedAt >= baseIsFresh && Date.now() - cached.fetchedAt < TOPIC_CACHE_TTL_MS) {
+  const baseFetchedAt = topicCache.get(topic)!.fetchedAt;
+  if (cached && cached.fetchedAt >= baseFetchedAt && Date.now() - cached.fetchedAt < TOPIC_CACHE_TTL_MS) {
     return cached.articles;
   }
 
-  const articles = language === "en" ? baseArticles : await translateArticleList(baseArticles, language);
-  topicCache.set(cacheKey, { fetchedAt: Date.now(), articles });
+  const translated = await translateArticleList(baseArticles, language);
+  topicCache.set(cacheKey, { fetchedAt: Date.now(), articles: translated });
+  registerArticles(translated);
+  return translated;
+}
+
+function registerArticles(articles: LiveArticle[]): void {
   for (const article of articles) {
     // Don't clobber an already-enriched entry, and don't mark a never-attempted
     // article as "just tried" — storedAt: 0 forces listRecommendations to treat
@@ -435,7 +473,6 @@ async function getArticlesForTopic(topic: string, language: ContentLanguage): Pr
       articleStore.set(article.id, { article, storedAt: 0 });
     }
   }
-  return articles;
 }
 
 export async function listRecommendations(
