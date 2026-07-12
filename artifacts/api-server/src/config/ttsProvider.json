@@ -1,0 +1,17 @@
+{
+  "provider": "sarvam",
+  "providers": {
+    "sarvam": {
+      "apiKeyEnv": "SARVAM_API_KEY",
+      "baseUrl": "https://api.sarvam.ai",
+      "model": "bulbul:v3",
+      "speaker": "shruti",
+      "sampleRate": 22050,
+      "languageCodes": {
+        "en": "en-IN",
+        "mr": "mr-IN",
+        "hi": "hi-IN"
+      }
+    }
+  }
+}

@@ -27,7 +27,8 @@ export const listArticlesQueryLimitMax = 20;
 
 export const ListArticlesQueryParams = zod.object({
   "interests": zod.coerce.string().optional().describe('Comma-separated list of topics to search for'),
-  "limit": zod.coerce.number().min(1).max(listArticlesQueryLimitMax).optional().describe('Maximum number of articles to return')
+  "limit": zod.coerce.number().min(1).max(listArticlesQueryLimitMax).optional().describe('Maximum number of articles to return'),
+  "language": zod.enum(['en', 'mr', 'hi']).optional().describe('Content language to fetch articles in. Defaults to English.')
 })
 
 export const ListArticlesResponseItem = zod.object({
@@ -42,7 +43,8 @@ export const ListArticlesResponseItem = zod.object({
   "fullTextAvailable": zod.boolean().describe('Whether `content` is the real full article text scraped from the publisher. When the publisher blocks scraping or paywalls the page, this is false.'),
   "aiExpanded": zod.boolean().describe('Whether `content` is an AI-generated expanded read (not the publisher\'s original text) produced because the real full text could not be scraped. Must be clearly labeled as AI-generated when shown to users.'),
   "imageUrl": zod.string().nullish(),
-  "topics": zod.array(zod.string())
+  "topics": zod.array(zod.string()),
+  "language": zod.enum(['en', 'mr', 'hi']).describe('Supported content and narration language codes.')
 }).describe('A real, live news article sourced from the web.').and(zod.object({
   "reason": zod.string()
 })).describe('An article paired with the reason it was recommended.')
@@ -69,7 +71,27 @@ export const GetArticleResponse = zod.object({
   "fullTextAvailable": zod.boolean().describe('Whether `content` is the real full article text scraped from the publisher. When the publisher blocks scraping or paywalls the page, this is false.'),
   "aiExpanded": zod.boolean().describe('Whether `content` is an AI-generated expanded read (not the publisher\'s original text) produced because the real full text could not be scraped. Must be clearly labeled as AI-generated when shown to users.'),
   "imageUrl": zod.string().nullish(),
-  "topics": zod.array(zod.string())
+  "topics": zod.array(zod.string()),
+  "language": zod.enum(['en', 'mr', 'hi']).describe('Supported content and narration language codes.')
 }).describe('A real, live news article sourced from the web.')
+
+
+/**
+ * Converts text to natural-sounding narration audio using the currently configured TTS provider (see artifacts/api-server/src/config/ttsProvider.json).
+ * @summary Convert text to speech
+ */
+export const synthesizeSpeechBodyTextMax = 20000;
+
+
+
+export const SynthesizeSpeechBody = zod.object({
+  "text": zod.string().min(1).max(synthesizeSpeechBodyTextMax),
+  "language": zod.enum(['en', 'mr', 'hi']).describe('Supported content and narration language codes.')
+}).describe('Text to narrate, in the given language.')
+
+export const SynthesizeSpeechResponse = zod.object({
+  "audioBase64": zod.string(),
+  "mimeType": zod.string()
+}).describe('Synthesized narration audio, base64-encoded.')
 
 

@@ -6,14 +6,14 @@ import { Input } from '@/components/ui/input';
 import { useProfile } from '@/hooks/use-profile';
 import { Card } from '@/components/ui/card';
 import { Check, ChevronRight } from 'lucide-react';
+import { LANGUAGE_OPTIONS } from '@/lib/language';
+import { LanguageCode } from '@/models/types';
 
 const TOPICS = [
   "Taxation", "GST", "Finance", "Business", 
   "Government policies", "Skill development", 
   "Social sector", "Technology", "Maharashtra news"
 ];
-
-const CONTENT_LANGUAGES = ["English", "मराठी (Marathi)", "हिंदी (Hindi)"];
 
 const COUNTRIES = ["India", "United States", "United Kingdom", "Other"];
 
@@ -25,8 +25,7 @@ export default function Onboarding() {
 
   const [name, setName] = useState('');
   const [nickname, setNickname] = useState('');
-  const [language, setLanguage] = useState('English');
-  const [contentLanguages, setContentLanguages] = useState<string[]>(['English']);
+  const [language, setLanguage] = useState<LanguageCode>('en');
   const [country, setCountry] = useState('India');
   const [interests, setInterests] = useState<string[]>([]);
   const [readingLength, setReadingLength] = useState('Detailed summary ~5 min');
@@ -40,7 +39,6 @@ export default function Onboarding() {
         name,
         nickname: nickname || name,
         language,
-        contentLanguages,
         country,
         interests,
         readingLength,
@@ -65,16 +63,6 @@ export default function Onboarding() {
       setInterests(interests.filter(t => t !== topic));
     } else if (interests.length < 5) {
       setInterests([...interests, topic]);
-    }
-  };
-
-  const toggleContentLanguage = (lang: string) => {
-    if (contentLanguages.includes(lang)) {
-      if (contentLanguages.length > 1) {
-        setContentLanguages(contentLanguages.filter(l => l !== lang));
-      }
-    } else {
-      setContentLanguages([...contentLanguages, lang]);
     }
   };
 
@@ -136,59 +124,24 @@ export default function Onboarding() {
 
             <div className="mb-10">
               <label className="block text-lg font-medium text-foreground mb-3">
-                Which language should I read to you in?
-              </label>
-              <div className="space-y-4">
-                <Card 
-                  className={`cursor-pointer transition-colors p-6 ${language === 'English' ? 'border-primary ring-2 ring-primary bg-primary/5' : 'bg-white'}`}
-                  onClick={() => setLanguage('English')}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-medium">English</span>
-                    {language === 'English' && <Check className="w-8 h-8 text-primary" />}
-                  </div>
-                </Card>
-                
-                <Card className="p-6 bg-secondary/50 border-dashed opacity-70">
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-medium text-muted-foreground">मराठी</span>
-                    <span className="text-sm px-3 py-1 bg-secondary text-secondary-foreground rounded-full font-medium">Coming soon</span>
-                  </div>
-                </Card>
-                
-                <Card className="p-6 bg-secondary/50 border-dashed opacity-70">
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-medium text-muted-foreground">हिंदी</span>
-                    <span className="text-sm px-3 py-1 bg-secondary text-secondary-foreground rounded-full font-medium">Coming soon</span>
-                  </div>
-                </Card>
-              </div>
-            </div>
-
-            <div className="mb-10">
-              <label className="block text-lg font-medium text-foreground mb-3">
-                Which language(s) would you like your news content in?
+                Which language should I read your briefings in?
               </label>
               <p className="text-base text-muted-foreground mb-4">
-                Select all that apply. We'll bring in content in these languages as it becomes available.
+                This sets both the news content and how I narrate it to you.
               </p>
-              <div className="flex flex-wrap gap-3">
-                {CONTENT_LANGUAGES.map(lang => {
-                  const isSelected = contentLanguages.includes(lang);
-                  return (
-                    <button
-                      key={lang}
-                      onClick={() => toggleContentLanguage(lang)}
-                      className={`px-5 py-3 rounded-xl text-lg font-medium transition-all ${
-                        isSelected 
-                          ? 'bg-primary text-primary-foreground shadow-md' 
-                          : 'bg-white border border-border text-foreground hover:border-primary'
-                      }`}
-                    >
-                      {lang}
-                    </button>
-                  );
-                })}
+              <div className="space-y-4">
+                {LANGUAGE_OPTIONS.map(({ code, label }) => (
+                  <Card
+                    key={code}
+                    className={`cursor-pointer transition-colors p-6 ${language === code ? 'border-primary ring-2 ring-primary bg-primary/5' : 'bg-white'}`}
+                    onClick={() => setLanguage(code)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xl font-medium">{label}</span>
+                      {language === code && <Check className="w-8 h-8 text-primary" />}
+                    </div>
+                  </Card>
+                ))}
               </div>
             </div>
 

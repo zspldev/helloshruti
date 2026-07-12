@@ -10,6 +10,18 @@ export interface HealthStatus {
 }
 
 /**
+ * Supported content and narration language codes.
+ */
+export type ContentLanguage = typeof ContentLanguage[keyof typeof ContentLanguage];
+
+
+export const ContentLanguage = {
+  en: 'en',
+  mr: 'mr',
+  hi: 'hi',
+} as const;
+
+/**
  * A real, live news article sourced from the web.
  */
 export interface Article {
@@ -28,6 +40,7 @@ export interface Article {
   /** @nullable */
   imageUrl?: string | null;
   topics: string[];
+  language: ContentLanguage;
 }
 
 /**
@@ -41,6 +54,26 @@ export interface ArticleError {
   error: string;
 }
 
+/**
+ * Text to narrate, in the given language.
+ */
+export interface SpeechInput {
+  /**
+     * @minLength 1
+     * @maxLength 20000
+     */
+  text: string;
+  language: ContentLanguage;
+}
+
+/**
+ * Synthesized narration audio, base64-encoded.
+ */
+export interface SpeechOutput {
+  audioBase64: string;
+  mimeType: string;
+}
+
 export type ListArticlesParams = {
 /**
  * Comma-separated list of topics to search for
@@ -52,5 +85,9 @@ interests?: string;
  * @maximum 20
  */
 limit?: number;
+/**
+ * Content language to fetch articles in. Defaults to English.
+ */
+language?: ContentLanguage;
 };
 

@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ContentLanguage } from './contentLanguage';
 
 export type ListArticlesParams = {
 /**
@@ -17,4 +18,8 @@ interests?: string;
  * @maximum 20
  */
 limit?: number;
+/**
+ * Content language to fetch articles in. Defaults to English.
+ */
+language?: ContentLanguage;
 };

@@ -5,6 +5,8 @@ import { Readability } from "@mozilla/readability";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { logger } from "./logger";
 
+export type ContentLanguage = "en" | "mr" | "hi";
+
 export interface LiveArticle {
   id: string;
   title: string;
@@ -18,6 +20,7 @@ export interface LiveArticle {
   aiExpanded: boolean;
   imageUrl: string | null;
   topics: string[];
+  language: ContentLanguage;
 }
 
 export interface LiveRecommendation extends LiveArticle {
@@ -42,6 +45,20 @@ const TOPIC_QUERY_SUFFIX: Record<string, string> = {
   "Social sector": "India social sector",
   Technology: "India technology",
   "Maharashtra news": "Maharashtra",
+};
+
+// Bing News RSS market codes per content language — this is what actually
+// steers results toward local-language publishers, not just a UI label.
+const LANGUAGE_MARKET: Record<ContentLanguage, string> = {
+  en: "en-IN",
+  mr: "mr-IN",
+  hi: "hi-IN",
+};
+
+const LANGUAGE_NAME: Record<ContentLanguage, string> = {
+  en: "English",
+  mr: "Marathi",
+  hi: "Hindi",
 };
 
 const TOPIC_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
@@ -160,6 +177,12 @@ async function fetchFullArticleText(url: string): Promise<string | null> {
  * than a one-line teaser without leaving the app.
  */
 async function generateAiExpandedContent(article: LiveArticle): Promise<string | null> {
+  const languageName = LANGUAGE_NAME[article.language];
+  const languageInstruction =
+    article.language === "en"
+      ? ""
+      : ` Write entirely in ${languageName}, using natural ${languageName} script (not transliterated English), ` +
+        `as a native ${languageName}-speaking journalist would.`;
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-5-mini",
@@ -172,7 +195,7 @@ async function generateAiExpandedContent(article: LiveArticle): Promise<string |
             "You do not have access to the original article text, so never invent specific quotes, numbers, or claims " +
             "attributed to named people that aren't in the given summary. Instead, explain relevant background, context, " +
             "and likely implications of the topic in clear, plain language. Write 4-6 short paragraphs. Do not mention " +
-            "that you lack the full article or add disclaimers — just write the explainer.",
+            `that you lack the full article or add disclaimers — just write the explainer.${languageInstruction}`,
         },
         {
           role: "user",
@@ -230,9 +253,10 @@ function extractDirectUrl(bingLink: string): string {
   }
 }
 
-async function fetchTopicFromBingNews(topic: string): Promise<LiveArticle[]> {
+async function fetchTopicFromBingNews(topic: string, language: ContentLanguage): Promise<LiveArticle[]> {
   const query = TOPIC_QUERY_SUFFIX[topic] ?? `India ${topic}`;
-  const url = `https://www.bing.com/news/search?q=${encodeURIComponent(query)}&format=rss`;
+  const market = LANGUAGE_MARKET[language];
+  const url = `https://www.bing.com/news/search?q=${encodeURIComponent(query)}&format=rss&mkt=${market}&setlang=${market}`;
 
   const response = await fetch(url, {
     headers: { "User-Agent": "Mozilla/5.0 (compatible; HelloShrutiBot/1.0)" },
@@ -268,19 +292,24 @@ async function fetchTopicFromBingNews(topic: string): Promise<LiveArticle[]> {
       aiExpanded: false,
       imageUrl,
       topics: [topic],
+      language,
     };
   });
 }
 
-async function getArticlesForTopic(topic: string): Promise<LiveArticle[]> {
-  const cached = topicCache.get(topic);
+async function getArticlesForTopic(topic: string, language: ContentLanguage): Promise<LiveArticle[]> {
+  // Different languages surface entirely different articles, so the cache and
+  // dedupe keys must include language or a Marathi request could return
+  // (or corrupt the cache with) English results and vice versa.
+  const cacheKey = `${language}:${topic}`;
+  const cached = topicCache.get(cacheKey);
   if (cached && Date.now() - cached.fetchedAt < TOPIC_CACHE_TTL_MS) {
     return cached.articles;
   }
 
   try {
-    const articles = await fetchTopicFromBingNews(topic);
-    topicCache.set(topic, { fetchedAt: Date.now(), articles });
+    const articles = await fetchTopicFromBingNews(topic, language);
+    topicCache.set(cacheKey, { fetchedAt: Date.now(), articles });
     for (const article of articles) {
       // Don't clobber an already-enriched entry, and don't mark a never-attempted
       // article as "just tried" — storedAt: 0 forces listRecommendations to treat
@@ -300,11 +329,12 @@ async function getArticlesForTopic(topic: string): Promise<LiveArticle[]> {
 export async function listRecommendations(
   interests: string[],
   limit: number,
+  language: ContentLanguage = "en",
 ): Promise<LiveRecommendation[]> {
   const topics = interests.length > 0 ? interests : DEFAULT_TOPICS;
 
   const perTopic = await Promise.all(
-    topics.map(async (topic) => ({ topic, articles: await getArticlesForTopic(topic) })),
+    topics.map(async (topic) => ({ topic, articles: await getArticlesForTopic(topic, language) })),
   );
 
   const seen = new Set<string>();

@@ -6,11 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -20,11 +24,13 @@ import type {
   ArticleError,
   HealthStatus,
   ListArticlesParams,
-  ReadingRecommendation
+  ReadingRecommendation,
+  SpeechInput,
+  SpeechOutput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
-import type { ErrorType } from '../custom-fetch';
+import type { ErrorType , BodyType } from '../custom-fetch';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -290,4 +296,76 @@ export function useGetArticle<TData = Awaited<ReturnType<typeof getArticle>>, TE
 
 
 
+
+export const getSynthesizeSpeechUrl = () => {
+
+
+
+
+  return `/api/tts`
+}
+
+/**
+ * Converts text to natural-sounding narration audio using the currently configured TTS provider (see artifacts/api-server/src/config/ttsProvider.json).
+ * @summary Convert text to speech
+ */
+export const synthesizeSpeech = async (speechInput: SpeechInput, options?: RequestInit): Promise<SpeechOutput> => {
+
+  return customFetch<SpeechOutput>(getSynthesizeSpeechUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(speechInput)
+  }
+);}
+
+
+
+
+
+export const getSynthesizeSpeechMutationOptions = <TError = ErrorType<ArticleError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof synthesizeSpeech>>, TError,{data: BodyType<SpeechInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof synthesizeSpeech>>, TError,{data: BodyType<SpeechInput>}, TContext> => {
+
+const mutationKey = ['synthesizeSpeech'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof synthesizeSpeech>>, {data: BodyType<SpeechInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  synthesizeSpeech(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SynthesizeSpeechMutationResult = NonNullable<Awaited<ReturnType<typeof synthesizeSpeech>>>
+    export type SynthesizeSpeechMutationBody = BodyType<SpeechInput>
+    export type SynthesizeSpeechMutationError = ErrorType<ArticleError>
+
+    /**
+ * @summary Convert text to speech
+ */
+export const useSynthesizeSpeech = <TError = ErrorType<ArticleError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof synthesizeSpeech>>, TError,{data: BodyType<SpeechInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof synthesizeSpeech>>,
+        TError,
+        {data: BodyType<SpeechInput>},
+        TContext
+      > => {
+      return useMutation(getSynthesizeSpeechMutationOptions(options));
+    }
 

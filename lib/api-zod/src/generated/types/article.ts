@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ContentLanguage } from './contentLanguage';
 
 /**
  * A real, live news article sourced from the web.
@@ -25,4 +26,5 @@ export interface Article {
   /** @nullable */
   imageUrl?: string | null;
   topics: string[];
+  language: ContentLanguage;
 }

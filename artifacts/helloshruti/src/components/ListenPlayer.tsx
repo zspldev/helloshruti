@@ -77,7 +77,7 @@ export default function ListenPlayer() {
     setElapsed(0);
     setFinished(false);
     setIsPlaying(true);
-    voiceService.speak(getModeText(article, m), () => {
+    voiceService.speak(getModeText(article, m), article.language, () => {
       clearTicker();
       setIsPlaying(false);
       setFinished(true);

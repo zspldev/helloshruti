@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: articles
     description: Live news article operations
+  - name: tts
+    description: Text-to-speech narration operations
 paths:
   /healthz:
     get:
@@ -47,6 +49,12 @@ paths:
             type: integer
             minimum: 1
             maximum: 20
+        - name: language
+          in: query
+          required: false
+          description: Content language to fetch articles in. Defaults to English.
+          schema:
+            $ref: "#/components/schemas/ContentLanguage"
       responses:
         "200":
           description: List of recommended articles
@@ -81,6 +89,33 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ArticleError"
+  /tts:
+    post:
+      operationId: synthesizeSpeech
+      tags: [tts]
+      summary: Convert text to speech
+      description: >-
+        Converts text to natural-sounding narration audio using the currently
+        configured TTS provider (see artifacts/api-server/src/config/ttsProvider.json).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpeechInput"
+      responses:
+        "200":
+          description: Synthesized audio
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpeechOutput"
+        "502":
+          description: The TTS provider failed to synthesize audio
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArticleError"
 components:
   schemas:
     HealthStatus:
@@ -90,6 +125,10 @@ components:
           type: string
       required:
         - status
+    ContentLanguage:
+      type: string
+      description: Supported content and narration language codes.
+      enum: [en, mr, hi]
     Article:
       type: object
       description: A real, live news article sourced from the web.
@@ -105,6 +144,7 @@ components:
         - fullTextAvailable
         - aiExpanded
         - topics
+        - language
       properties:
         id:
           type: string
@@ -139,6 +179,8 @@ components:
           type: array
           items:
             type: string
+        language:
+          $ref: "#/components/schemas/ContentLanguage"
     ReadingRecommendation:
       type: object
       description: An article paired with the reason it was recommended.
@@ -156,5 +198,29 @@ components:
         - error
       properties:
         error:
+          type: string
+    SpeechInput:
+      type: object
+      description: Text to narrate, in the given language.
+      required:
+        - text
+        - language
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 20000
+        language:
+          $ref: "#/components/schemas/ContentLanguage"
+    SpeechOutput:
+      type: object
+      description: Synthesized narration audio, base64-encoded.
+      required:
+        - audioBase64
+        - mimeType
+      properties:
+        audioBase64:
+          type: string
+        mimeType:
           type: string
 

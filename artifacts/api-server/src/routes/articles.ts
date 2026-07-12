@@ -23,9 +23,10 @@ router.get("/articles", async (req, res): Promise<void> => {
         .filter(Boolean)
     : [];
   const limit = parsed.data.limit ?? 5;
+  const language = parsed.data.language ?? "en";
 
-  req.log.info({ interests, limit }, "Fetching live article recommendations");
-  const recommendations = await listRecommendations(interests, limit);
+  req.log.info({ interests, limit, language }, "Fetching live article recommendations");
+  const recommendations = await listRecommendations(interests, limit, language);
   res.json(ListArticlesResponse.parse(recommendations));
 });
 

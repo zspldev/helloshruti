@@ -8,6 +8,9 @@
 
 export * from './article';
 export * from './articleError';
+export * from './contentLanguage';
 export * from './healthStatus';
 export * from './listArticlesParams';
 export * from './readingRecommendation';
+export * from './speechInput';
+export * from './speechOutput';

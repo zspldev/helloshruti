@@ -44,7 +44,7 @@ export default function Dashboard() {
   const [openPanel, setOpenPanel] = useState<{ articleId: string; type: PanelType } | null>(null);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
 
-  const listParams = { interests: profile?.interests.join(','), limit: 5 };
+  const listParams = { interests: profile?.interests.join(','), limit: 5, language: profile?.language ?? 'en' };
   const { data: recommendations = [], isLoading, isError, refetch } = useListArticles(
     listParams,
     { query: { queryKey: getListArticlesQueryKey(listParams), enabled: !!profile } },

@@ -1,10 +1,14 @@
 import { z } from "zod";
 
+// Single source of truth for which content/narration languages the app
+// supports — the same code drives article fetching (Bing News market +
+// AI-expansion prompt language) and TTS narration, so they can never drift.
+export type LanguageCode = 'en' | 'mr' | 'hi';
+
 export interface UserProfile {
   name: string;
   nickname: string;
-  language: string;
-  contentLanguages: string[];
+  language: LanguageCode;
   country: string;
   interests: string[];
   briefingTime: string;
@@ -24,6 +28,7 @@ export interface Article {
   aiExpanded: boolean;
   imageUrl?: string | null;
   topics: string[];
+  language: LanguageCode;
 }
 
 export interface ReadingRecommendation extends Article {
