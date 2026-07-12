@@ -2,7 +2,18 @@ import { useEffect, useRef, useState } from 'react';
 import { Article } from '@/models/types';
 import { voiceService } from '@/services/voiceService';
 import { getExplainText, getSummaryText, getFullReadText, estimateSeconds } from '@/lib/narration';
-import { SkipBack, SkipForward, Play, Pause, Square, ChevronLeft, ChevronRight, Headphones } from 'lucide-react';
+import {
+  SkipBack,
+  SkipForward,
+  Play,
+  Pause,
+  Square,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  ChevronDown,
+  Headphones,
+} from 'lucide-react';
 import { Button } from './ui/button';
 
 export type ListenMode = 'explain' | 'summary' | 'full';
@@ -36,6 +47,11 @@ export default function ListenPlayer() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [finished, setFinished] = useState(false);
+  // Collapsed by default: this is a compact "now playing" dock, not a takeover
+  // sheet, so it never hides the story list or the article's image behind it.
+  // Expanding is an explicit choice for anyone who wants the read-along text
+  // or the extra transport controls.
+  const [expanded, setExpanded] = useState(false);
 
   const intervalRef = useRef<number | null>(null);
   const currentArticle = articles[currentIndex] ?? null;
@@ -189,114 +205,132 @@ export default function ListenPlayer() {
   const canNavigate = articles.length > 1;
 
   return (
-    <div
-      role="region"
-      aria-label="Listen player"
-      className="fixed inset-x-0 bottom-0 z-50 bg-primary text-primary-foreground rounded-t-3xl shadow-[0_-10px_40px_rgba(30,63,32,0.25)] px-6 pt-5 pb-6 md:pb-8 animate-in slide-in-from-bottom duration-300"
-    >
-      <div className="max-w-2xl mx-auto">
-        <div className="flex items-start justify-between gap-4 mb-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-11 h-11 rounded-full bg-primary-foreground/15 flex items-center justify-center shrink-0">
-              <Headphones className="w-5 h-5" />
-            </div>
-            <div className="min-w-0">
-              <p data-testid="listen-player-mode" className="text-xs font-semibold uppercase tracking-wide text-primary-foreground/70">
-                {MODE_LABEL[mode]} &middot; {currentArticle.source}
-              </p>
-              <p data-testid="listen-player-title" className="text-lg font-serif leading-snug truncate">{currentArticle.title}</p>
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={stop}
-            className="rounded-full text-primary-foreground hover:bg-primary-foreground/15 shrink-0"
-            title="Stop"
-            aria-label="Stop listening"
-          >
-            <Square className="w-5 h-5" />
-          </Button>
-        </div>
-
-        <p
-          data-testid="listen-player-text"
-          className="text-sm text-primary-foreground/80 leading-relaxed mb-4 max-h-24 overflow-y-auto"
-        >
-          {currentText}
-        </p>
-
+    <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-3 pointer-events-none">
+      <div
+        role="region"
+        aria-label="Listen player"
+        className="pointer-events-auto w-full max-w-2xl bg-primary text-primary-foreground rounded-2xl shadow-[0_10px_40px_rgba(30,63,32,0.35)] overflow-hidden animate-in slide-in-from-bottom duration-300"
+      >
+        {/* Slim progress bar — always visible, doubles as the top edge of the dock */}
         <div
-          className="h-1.5 w-full rounded-full bg-primary-foreground/20 mb-5 overflow-hidden"
+          className="h-1 w-full bg-primary-foreground/20"
           role="progressbar"
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={progressPct}
         >
-          <div className="h-full bg-primary-foreground rounded-full transition-all" style={{ width: `${progressPct}%` }} />
+          <div className="h-full bg-primary-foreground transition-all" style={{ width: `${progressPct}%` }} />
         </div>
 
-        <div className="flex items-center justify-center gap-3 md:gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => goToStory(-1)}
-            disabled={!canNavigate}
-            className="rounded-full text-primary-foreground hover:bg-primary-foreground/15 disabled:opacity-30"
-            title="Previous story"
-            aria-label="Previous story"
+        {/* Compact bar: mode, title, and core transport controls only — this is
+            what's on screen by default so the story/image behind it stays visible. */}
+        <div className="flex items-center gap-2 px-3 py-2.5">
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            aria-label={expanded ? 'Collapse listen player' : 'Expand listen player'}
+            className="flex items-center gap-2.5 flex-1 min-w-0 text-left rounded-lg hover:bg-primary-foreground/10 -m-1 p-1"
           >
-            <ChevronLeft className="w-6 h-6" />
-          </Button>
+            <div className="w-9 h-9 rounded-full bg-primary-foreground/15 flex items-center justify-center shrink-0">
+              <Headphones className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <p data-testid="listen-player-mode" className="text-[11px] font-semibold uppercase tracking-wide text-primary-foreground/70 truncate">
+                {MODE_LABEL[mode]} &middot; {currentArticle.source}
+              </p>
+              <p data-testid="listen-player-title" className="text-sm font-serif leading-snug truncate">{currentArticle.title}</p>
+            </div>
+            {expanded ? <ChevronDown className="w-4 h-4 shrink-0 opacity-70" /> : <ChevronUp className="w-4 h-4 shrink-0 opacity-70" />}
+          </button>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={restart}
-            className="rounded-full text-primary-foreground hover:bg-primary-foreground/15"
-            title="Restart (beginning)"
-            aria-label="Restart from the beginning"
-          >
-            <SkipBack className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center gap-0.5 shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => goToStory(-1)}
+              disabled={!canNavigate}
+              className="rounded-full w-8 h-8 text-primary-foreground hover:bg-primary-foreground/15 disabled:opacity-30"
+              title="Previous story"
+              aria-label="Previous story"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
 
-          <Button
-            size="iconLg"
-            onClick={togglePlayPause}
-            className="rounded-full bg-primary-foreground text-primary hover:bg-primary-foreground/90 shadow-md"
-            title={isPlaying ? 'Pause' : 'Play'}
-            aria-label={isPlaying ? 'Pause' : 'Play'}
-          >
-            {isPlaying ? <Pause className="w-7 h-7" /> : <Play className="w-7 h-7" />}
-          </Button>
+            <Button
+              size="icon"
+              onClick={togglePlayPause}
+              className="rounded-full w-9 h-9 bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+              title={isPlaying ? 'Pause' : 'Play'}
+              aria-label={isPlaying ? 'Pause' : 'Play'}
+            >
+              {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            </Button>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={skipToEnd}
-            className="rounded-full text-primary-foreground hover:bg-primary-foreground/15"
-            title="Skip to end"
-            aria-label="Skip to the end"
-          >
-            <SkipForward className="w-5 h-5" />
-          </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => goToStory(1)}
+              disabled={!canNavigate}
+              className="rounded-full w-8 h-8 text-primary-foreground hover:bg-primary-foreground/15 disabled:opacity-30"
+              title="Next story"
+              aria-label="Next story"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => goToStory(1)}
-            disabled={!canNavigate}
-            className="rounded-full text-primary-foreground hover:bg-primary-foreground/15 disabled:opacity-30"
-            title="Next story"
-            aria-label="Next story"
-          >
-            <ChevronRight className="w-6 h-6" />
-          </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={stop}
+              className="rounded-full w-8 h-8 text-primary-foreground hover:bg-primary-foreground/15"
+              title="Stop"
+              aria-label="Stop listening"
+            >
+              <Square className="w-3.5 h-3.5" />
+            </Button>
+          </div>
         </div>
 
-        <p className="text-center text-xs text-primary-foreground/60 mt-4">
-          Space to play/pause &middot; ←/→ for previous/next story &middot; Home/End to restart or skip &middot; Esc to stop
-        </p>
+        {/* Expanded panel: read-along text and secondary controls, opened on request */}
+        {expanded && (
+          <div className="px-4 pb-4 pt-1 border-t border-primary-foreground/10 animate-in fade-in slide-in-from-top-1 duration-150">
+            <p
+              data-testid="listen-player-text"
+              className="text-sm text-primary-foreground/80 leading-relaxed mb-3 mt-3 max-h-28 overflow-y-auto"
+            >
+              {currentText}
+            </p>
+
+            <div className="flex items-center justify-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={restart}
+                className="rounded-full text-primary-foreground hover:bg-primary-foreground/15"
+                title="Restart (beginning)"
+                aria-label="Restart from the beginning"
+              >
+                <SkipBack className="w-5 h-5" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={skipToEnd}
+                className="rounded-full text-primary-foreground hover:bg-primary-foreground/15"
+                title="Skip to end"
+                aria-label="Skip to the end"
+              >
+                <SkipForward className="w-5 h-5" />
+              </Button>
+            </div>
+
+            <p className="text-center text-[11px] text-primary-foreground/60 mt-3">
+              Space to play/pause &middot; ←/→ for previous/next story &middot; Home/End to restart or skip &middot; Esc to stop
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

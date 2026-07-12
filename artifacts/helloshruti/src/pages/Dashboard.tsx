@@ -107,24 +107,24 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-[100dvh] bg-background pb-32">
-      <header className="bg-primary text-primary-foreground px-6 py-8 md:py-12 shadow-sm sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto flex justify-between items-end">
-          <div>
-            <p className="text-primary-foreground/80 font-medium mb-1 tracking-wide uppercase text-sm">Today's Reading</p>
-            <h1 className="text-3xl md:text-5xl font-serif leading-tight">
-              Good morning, <br />{profile.nickname}
+      <header className="bg-primary text-primary-foreground px-6 py-4 shadow-sm sticky top-0 z-10">
+        <div className="max-w-3xl mx-auto flex justify-between items-center gap-4">
+          <div className="min-w-0">
+            <p className="text-primary-foreground/70 font-medium tracking-wide uppercase text-xs">Today's Reading</p>
+            <h1 className="text-xl md:text-2xl font-serif leading-snug truncate">
+              Good morning{profile.nickname ? `, ${profile.nickname}` : ''}
             </h1>
           </div>
-          <div className="flex items-center gap-2">
-            <Link href="/history" className="p-3 bg-primary-foreground/10 hover:bg-primary-foreground/20 rounded-full transition-colors" title="Reading History">
-              <HistoryIcon className="w-6 h-6 text-primary-foreground" />
+          <div className="flex items-center gap-2 shrink-0">
+            <Link href="/history" className="p-2.5 bg-primary-foreground/10 hover:bg-primary-foreground/20 rounded-full transition-colors" title="Reading History">
+              <HistoryIcon className="w-5 h-5 text-primary-foreground" />
             </Link>
             <button
               onClick={() => signOut({ redirectUrl: '/' })}
-              className="p-3 bg-primary-foreground/10 hover:bg-primary-foreground/20 rounded-full transition-colors"
+              className="p-2.5 bg-primary-foreground/10 hover:bg-primary-foreground/20 rounded-full transition-colors"
               title="Log out"
             >
-              <LogOut className="w-6 h-6 text-primary-foreground" />
+              <LogOut className="w-5 h-5 text-primary-foreground" />
             </button>
           </div>
         </div>
