@@ -33,11 +33,7 @@ export default function VoiceOverlay() {
         // If it was opened with autoStart, Shruti speaks first based on context
         const profile = getProfile();
         const nickname = profile?.nickname || 'there';
-        if (e.detail?.command) {
-            // Pass the article explicitly — setContextArticle above hasn't flushed
-            // yet, and this listener's closure can't see later renders' state.
-            handleCommand(e.detail.command.toLowerCase(), article ?? null);
-        } else if (article) {
+        if (article) {
           addMessage('shruti', `I'm ready to talk about "${article.title}". What would you like to know?`);
           voiceService.speak(`I'm ready to talk about "${article.title}". What would you like to know?`);
         } else {
@@ -47,22 +43,10 @@ export default function VoiceOverlay() {
       }
     };
 
-    const handleListenArticle = (e: any) => {
-      setIsOpen(true);
-      const article = e.detail?.article;
-      if (article) {
-        setContextArticle(article);
-        addMessage('shruti', `Reading: ${article.title}...`);
-        voiceService.speak(getFullReadText(article));
-      }
-    };
-
     window.addEventListener('shruti:open', handleOpen);
-    window.addEventListener('shruti:listen_article', handleListenArticle);
 
     return () => {
       window.removeEventListener('shruti:open', handleOpen);
-      window.removeEventListener('shruti:listen_article', handleListenArticle);
     };
   }, []);
 
@@ -130,7 +114,7 @@ export default function VoiceOverlay() {
           break;
         case 'EXPLAIN':
           if (activeArticle) {
-            response = getExplainText(activeArticle, nickname);
+            response = getExplainText(activeArticle);
           } else {
             response = "I need an article context to explain further.";
           }

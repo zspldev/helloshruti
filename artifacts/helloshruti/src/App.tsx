@@ -16,6 +16,7 @@ import Dashboard from '@/pages/Dashboard';
 import ArticleDetail from '@/pages/ArticleDetail';
 import History from '@/pages/History';
 import VoiceOverlay from '@/components/VoiceOverlay';
+import ListenPlayer from '@/components/ListenPlayer';
 
 const queryClient = new QueryClient();
 
@@ -266,6 +267,7 @@ function ClerkProviderWithRoutes() {
           </Switch>
           <Show when="signed-in">
             <VoiceOverlay />
+            <ListenPlayer />
           </Show>
         </div>
         <Toaster />

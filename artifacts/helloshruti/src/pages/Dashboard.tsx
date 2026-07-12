@@ -59,12 +59,20 @@ export default function Dashboard() {
     );
   };
 
+  // Explain, Summary, and Full Read in listen mode all open the same
+  // ListenPlayer surface — only the mode (and therefore the text read aloud)
+  // differs — with the currently-visible recommendations as the story list
+  // for previous/next navigation.
+  const dispatchListen = (article: Article, listenMode: 'explain' | 'summary' | 'full') => {
+    window.dispatchEvent(
+      new CustomEvent('shruti:listen', { detail: { articles: recommendations, articleId: article.id, mode: listenMode } }),
+    );
+  };
+
   const handleExplain = (e: React.MouseEvent, article: Article) => {
     e.preventDefault();
     if (mode === 'listen') {
-      window.dispatchEvent(
-        new CustomEvent('shruti:open', { detail: { articleContext: article, autoStart: true, command: 'EXPLAIN' } }),
-      );
+      dispatchListen(article, 'explain');
     } else {
       togglePanel(article, 'explain');
     }
@@ -73,9 +81,7 @@ export default function Dashboard() {
   const handleSummary = (e: React.MouseEvent, article: Article) => {
     e.preventDefault();
     if (mode === 'listen') {
-      window.dispatchEvent(
-        new CustomEvent('shruti:open', { detail: { articleContext: article, autoStart: true, command: 'SUMMARIZE' } }),
-      );
+      dispatchListen(article, 'summary');
     } else {
       togglePanel(article, 'summary');
     }
@@ -84,7 +90,7 @@ export default function Dashboard() {
   const handleFullRead = (e: React.MouseEvent, article: Article) => {
     e.preventDefault();
     if (mode === 'listen') {
-      window.dispatchEvent(new CustomEvent('shruti:listen_article', { detail: { article } }));
+      dispatchListen(article, 'full');
     } else {
       setLocation(`/article/${article.id}`);
     }
@@ -153,7 +159,7 @@ export default function Dashboard() {
 
         <div className="space-y-6">
           {recommendations.map((article) => {
-            const explainText = getExplainText(article, profile.nickname);
+            const explainText = getExplainText(article);
             const summaryText = getSummaryText(article);
             const isSaved = savedIds.has(article.id);
             const panel = openPanel?.articleId === article.id ? openPanel.type : null;
@@ -186,7 +192,7 @@ export default function Dashboard() {
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              Explanation · 1–2 sentences · {formatDuration(estimateSeconds(explainText))}
+                              Explanation · 1 sentence · {formatDuration(estimateSeconds(explainText))}
                             </TooltipContent>
                           </Tooltip>
 
@@ -197,7 +203,7 @@ export default function Dashboard() {
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              Summary · 3–5 sentences · {formatDuration(estimateSeconds(summaryText))}
+                              Summary · 3–4 sentences · {formatDuration(estimateSeconds(summaryText))}
                             </TooltipContent>
                           </Tooltip>
 

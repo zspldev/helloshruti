@@ -47,6 +47,18 @@ export const voiceService = {
     }
   },
 
+  pauseSpeaking: (): void => {
+    if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+      window.speechSynthesis.pause();
+    }
+  },
+
+  resumeSpeaking: (): void => {
+    if ('speechSynthesis' in window && window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
+  },
+
   listen: (onResult: (text: string) => void, onError: (err: any) => void): void => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {

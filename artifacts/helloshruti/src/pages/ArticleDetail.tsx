@@ -2,8 +2,9 @@ import { useEffect, useRef } from 'react';
 import { useLocation, useParams } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { articleService } from '@/services/articleService';
-import { useGetArticle, getGetArticleQueryKey } from '@workspace/api-client-react';
+import { useGetArticle, getGetArticleQueryKey, useListArticles, getListArticlesQueryKey } from '@workspace/api-client-react';
 import { ArrowLeft, Clock, ExternalLink, MessageSquare, Play, Info } from 'lucide-react';
+import { useProfile } from '@/hooks/use-profile';
 
 export default function ArticleDetail() {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +13,16 @@ export default function ArticleDetail() {
     query: { queryKey: getGetArticleQueryKey(id ?? ''), enabled: !!id },
   });
   const savedToHistoryRef = useRef<string | null>(null);
+  const { getProfile } = useProfile();
+  const profile = getProfile();
+
+  // Same recommendations list Dashboard shows — reusing its query key means this
+  // is typically already cached, and it's what "previous/next story" in the
+  // ListenPlayer cycles through when opened from this page.
+  const listParams = { interests: profile?.interests.join(','), limit: 5 };
+  const { data: recommendations = [] } = useListArticles(listParams, {
+    query: { queryKey: getListArticlesQueryKey(listParams), enabled: !!profile },
+  });
 
   useEffect(() => {
     if (article && savedToHistoryRef.current !== article.id) {
@@ -45,8 +56,9 @@ export default function ArticleDetail() {
   };
 
   const handleListen = () => {
-    window.dispatchEvent(new CustomEvent('shruti:listen_article', { 
-      detail: { article } 
+    const articles = recommendations.some((a) => a.id === article.id) ? recommendations : [article];
+    window.dispatchEvent(new CustomEvent('shruti:listen', {
+      detail: { articles, articleId: article.id, mode: 'full' },
     }));
   };
 

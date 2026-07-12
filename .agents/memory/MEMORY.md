@@ -1,2 +1,3 @@
 - [HelloShruti auth architecture](helloshruti-auth.md) — Clerk added for login; user profile/onboarding data stays in localStorage keyed per Clerk userId, not migrated to a DB.
 - [HelloShruti content pipeline](helloshruti-content-pipeline.md) — scraped/AI-expanded/preview content tiers; cache-freshness sentinel and gpt-5-mini token-budget gotchas.
+- [HelloShruti listen-mode player](helloshruti-listen-mode.md) — unified Explain/Summary/Full-Read player; Clerk sign-up blocks the testing subagent, use mockup-sandbox harness instead.

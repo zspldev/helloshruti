@@ -19,12 +19,37 @@ export function formatDuration(seconds: number): string {
   return `~${mins}:${secs.toString().padStart(2, '0')} min`;
 }
 
-export function getSummaryText(article: Article): string {
-  return `Here is a summary of ${article.title}: ${article.summary}`;
+// Splits on sentence-ending punctuation, keeping the punctuation with each sentence.
+function splitSentences(text: string): string[] {
+  const cleaned = text.replace(/\s+/g, ' ').trim();
+  if (!cleaned) return [];
+  const matches = cleaned.match(/[^.!?]+[.!?]+(?=\s|$)|[^.!?]+$/g);
+  return matches ? matches.map((s) => s.trim()).filter(Boolean) : [cleaned];
 }
 
-export function getExplainText(article: Article, nickname = 'there'): string {
-  return `Certainly, ${nickname}. This article discusses ${article.title}. In simple terms, it means that ${article.summary} It is highly relevant to your interest in ${article.topics[0] ?? 'this topic'}.`;
+// The richest text we have for an article — real scraped text, AI-expanded
+// explainer, or the RSS summary if that's all that's available. Explain and
+// Summary both carve a prefix off this so they scale with how much material
+// actually exists instead of always echoing the same short RSS teaser.
+function richestText(article: Article): string {
+  return article.content && article.content.length > article.summary.length
+    ? article.content
+    : article.summary;
+}
+
+// Explain: the shortest possible teaser — just enough for the user to decide
+// whether they want to hear more. One sentence, no filler.
+export function getExplainText(article: Article): string {
+  const sentences = splitSentences(richestText(article));
+  return sentences[0] ?? article.title;
+}
+
+// Summary: a fuller but still brief overview — a few sentences, distinct from
+// both the one-line Explain and the full Full Read text.
+export function getSummaryText(article: Article): string {
+  const sentences = splitSentences(richestText(article));
+  const picked = sentences.slice(0, 4);
+  return picked.length > 0 ? picked.join(' ') : article.title;
 }
 
 export function getFullReadText(article: Article): string {
