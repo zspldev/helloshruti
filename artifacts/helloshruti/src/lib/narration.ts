@@ -28,6 +28,9 @@ export function getExplainText(article: Article, nickname = 'there'): string {
 }
 
 export function getFullReadText(article: Article): string {
+  if (article.aiExpanded) {
+    return `${article.title}. Here's an AI-expanded explainer, since we couldn't pull the original article text. ${article.content}`;
+  }
   if (!article.fullTextAvailable) {
     return `${article.title}. ${article.content} The full article isn't available to read out in full — you can open it on ${article.source} instead.`;
   }

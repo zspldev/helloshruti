@@ -21,8 +21,10 @@ export interface Article {
   url: string;
   date: string;
   estimatedReadingTime: string;
-  /** Whether `content` is the real full article text. When the publisher blocks scraping or paywalls the page, this is false and `content` falls back to the short RSS summary. */
+  /** Whether `content` is the real full article text scraped from the publisher. When the publisher blocks scraping or paywalls the page, this is false. */
   fullTextAvailable: boolean;
+  /** Whether `content` is an AI-generated expanded read (not the publisher's original text) produced because the real full text could not be scraped. Must be clearly labeled as AI-generated when shown to users. */
+  aiExpanded: boolean;
   /** @nullable */
   imageUrl?: string | null;
   topics: string[];

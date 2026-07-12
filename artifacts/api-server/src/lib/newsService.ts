@@ -1,5 +1,8 @@
 import { XMLParser } from "fast-xml-parser";
 import * as cheerio from "cheerio";
+import { JSDOM } from "jsdom";
+import { Readability } from "@mozilla/readability";
+import { openai } from "@workspace/integrations-openai-ai-server";
 import { logger } from "./logger";
 
 export interface LiveArticle {
@@ -12,6 +15,7 @@ export interface LiveArticle {
   date: string;
   estimatedReadingTime: string;
   fullTextAvailable: boolean;
+  aiExpanded: boolean;
   imageUrl: string | null;
   topics: string[];
 }
@@ -92,9 +96,11 @@ const BOILERPLATE_PATTERN =
 /**
  * Best-effort fetch of the full publisher page to extract real article text.
  * News sites vary wildly in markup and many block bots or sit behind paywalls,
- * so this is allowed to fail — callers fall back to the RSS headline/summary.
+ * so this is allowed to fail — callers fall back to an AI-expanded read or the
+ * RSS headline/summary.
  */
 async function fetchFullArticleText(url: string): Promise<string | null> {
+  let html: string;
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), ENRICH_TIMEOUT_MS);
@@ -112,7 +118,25 @@ async function fetchFullArticleText(url: string): Promise<string | null> {
     const contentType = response.headers.get("content-type") ?? "";
     if (!contentType.includes("html")) return null;
 
-    const html = await response.text();
+    html = await response.text();
+  } catch (err) {
+    logger.debug({ err: (err as Error).message, url }, "Full article fetch failed, using fallback instead");
+    return null;
+  }
+
+  // Readability (the engine behind Firefox's reader mode) is far better than raw
+  // <p> scraping at isolating the article body from nav/ads/related-links boilerplate.
+  try {
+    const dom = new JSDOM(html, { url });
+    const parsed = new Readability(dom.window.document).parse();
+    const text = parsed?.textContent?.replace(/\s+/g, " ").trim();
+    if (text && text.length > 200) return text.slice(0, 4000);
+  } catch (err) {
+    logger.debug({ err: (err as Error).message, url }, "Readability parse failed, trying raw paragraph scrape");
+  }
+
+  // Fall back to raw paragraph scraping for pages Readability can't parse (rare).
+  try {
     const $ = cheerio.load(html);
     $("script, style, nav, header, footer, aside, form").remove();
 
@@ -123,23 +147,73 @@ async function fetchFullArticleText(url: string): Promise<string | null> {
 
     const combined = paragraphs.join(" ").trim();
     return combined.length > 200 ? combined.slice(0, 4000) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * When we can't scrape real publisher text (bot-blocked, paywalled, JS-rendered),
+ * ask an LLM to generate a substantially expanded explainer grounded in the
+ * headline/summary/topics we already have. This is clearly labeled to users as
+ * AI-generated, not the publisher's reporting — it exists so readers get more
+ * than a one-line teaser without leaving the app.
+ */
+async function generateAiExpandedContent(article: LiveArticle): Promise<string | null> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-5-mini",
+      max_completion_tokens: 8192,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You expand short news headlines and summaries into a longer, well-structured explainer for a reading app. " +
+            "You do not have access to the original article text, so never invent specific quotes, numbers, or claims " +
+            "attributed to named people that aren't in the given summary. Instead, explain relevant background, context, " +
+            "and likely implications of the topic in clear, plain language. Write 4-6 short paragraphs. Do not mention " +
+            "that you lack the full article or add disclaimers — just write the explainer.",
+        },
+        {
+          role: "user",
+          content: `Headline: ${article.title}\nSummary: ${article.summary}\nTopics: ${article.topics.join(", ")}\nSource: ${article.source}`,
+        },
+      ],
+    });
+
+    const text = response.choices[0]?.message?.content?.trim();
+    return text && text.length > 100 ? text : null;
   } catch (err) {
-    logger.debug({ err: (err as Error).message, url }, "Full article fetch failed, using RSS summary instead");
+    logger.debug({ err: (err as Error).message, url: article.url }, "AI-expanded content generation failed");
     return null;
   }
 }
 
 async function enrichArticle(article: LiveArticle): Promise<LiveArticle> {
   const fullText = await fetchFullArticleText(article.url);
-  if (!fullText) return { ...article, fullTextAvailable: false };
+  if (fullText) {
+    return {
+      ...article,
+      summary: firstSentences(fullText, 2) || article.summary,
+      content: fullText,
+      estimatedReadingTime: estimateReadingTime(fullText),
+      fullTextAvailable: true,
+      aiExpanded: false,
+    };
+  }
 
-  return {
-    ...article,
-    summary: firstSentences(fullText, 2) || article.summary,
-    content: fullText,
-    estimatedReadingTime: estimateReadingTime(fullText),
-    fullTextAvailable: true,
-  };
+  const aiText = await generateAiExpandedContent(article);
+  if (aiText) {
+    return {
+      ...article,
+      content: aiText,
+      estimatedReadingTime: estimateReadingTime(aiText),
+      fullTextAvailable: false,
+      aiExpanded: true,
+    };
+  }
+
+  return { ...article, fullTextAvailable: false, aiExpanded: false };
 }
 
 /**
@@ -191,6 +265,7 @@ async function fetchTopicFromBingNews(topic: string): Promise<LiveArticle[]> {
       date: new Date(pubDate).toISOString(),
       estimatedReadingTime: estimateReadingTime(summary),
       fullTextAvailable: false,
+      aiExpanded: false,
       imageUrl,
       topics: [topic],
     };
@@ -207,7 +282,12 @@ async function getArticlesForTopic(topic: string): Promise<LiveArticle[]> {
     const articles = await fetchTopicFromBingNews(topic);
     topicCache.set(topic, { fetchedAt: Date.now(), articles });
     for (const article of articles) {
-      articleStore.set(article.id, { article, storedAt: Date.now() });
+      // Don't clobber an already-enriched entry, and don't mark a never-attempted
+      // article as "just tried" — storedAt: 0 forces listRecommendations to treat
+      // it as stale so enrichArticle actually runs the first time it's requested.
+      if (!articleStore.has(article.id)) {
+        articleStore.set(article.id, { article, storedAt: 0 });
+      }
     }
     return articles;
   } catch (err) {
@@ -251,7 +331,10 @@ export async function listRecommendations(
   const enriched = await Promise.all(
     picked.map(async ({ article, reason }) => {
       const existing = articleStore.get(article.id);
-      const freshnessWindow = existing?.article.fullTextAvailable ? ARTICLE_CACHE_TTL_MS : FAILED_ENRICH_RETRY_MS;
+      // Both a real scrape and a successful AI-expanded read are "good enough" results
+      // worth the long cache window; only a total failure (plain RSS summary) retries soon.
+      const enrichSucceeded = existing?.article.fullTextAvailable || existing?.article.aiExpanded;
+      const freshnessWindow = enrichSucceeded ? ARTICLE_CACHE_TTL_MS : FAILED_ENRICH_RETRY_MS;
       const isFresh = existing && Date.now() - existing.storedAt < freshnessWindow;
       const full = isFresh ? existing.article : await enrichArticle(article);
       articleStore.set(article.id, { article: full, storedAt: Date.now() });

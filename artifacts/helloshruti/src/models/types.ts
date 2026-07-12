@@ -21,6 +21,7 @@ export interface Article {
   date: string;
   estimatedReadingTime: string;
   fullTextAvailable: boolean;
+  aiExpanded: boolean;
   imageUrl?: string | null;
   topics: string[];
 }

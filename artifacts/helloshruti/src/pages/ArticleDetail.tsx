@@ -92,7 +92,18 @@ export default function ArticleDetail() {
             {article.summary}
           </p>
 
-          {!article.fullTextAvailable && (
+          {article.aiExpanded && (
+            <div className="not-prose flex items-start gap-3 p-4 mb-8 rounded-xl bg-primary/5 border border-primary/20 text-base text-muted-foreground">
+              <Info className="w-5 h-5 shrink-0 mt-0.5 text-primary" />
+              <span>
+                {article.source} doesn't let us pull the full article text, so Shruti generated this AI-expanded
+                explainer from the headline and summary — it's not the publisher's original reporting.
+                Open the original link below to read the real article.
+              </span>
+            </div>
+          )}
+
+          {!article.fullTextAvailable && !article.aiExpanded && (
             <div className="not-prose flex items-start gap-3 p-4 mb-8 rounded-xl bg-secondary/50 border border-border text-base text-muted-foreground">
               <Info className="w-5 h-5 shrink-0 mt-0.5 text-primary" />
               <span>

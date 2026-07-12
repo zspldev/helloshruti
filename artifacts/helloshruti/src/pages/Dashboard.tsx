@@ -210,6 +210,8 @@ export default function Dashboard() {
                             <TooltipContent>
                               {article.fullTextAvailable
                                 ? `Full Article · ${article.estimatedReadingTime}`
+                                : article.aiExpanded
+                                ? `AI-expanded read · ${article.estimatedReadingTime}`
                                 : `Preview only · ${article.source} blocks full text`}
                             </TooltipContent>
                           </Tooltip>

@@ -39,7 +39,8 @@ export const ListArticlesResponseItem = zod.object({
   "url": zod.string(),
   "date": zod.string(),
   "estimatedReadingTime": zod.string(),
-  "fullTextAvailable": zod.boolean().describe('Whether `content` is the real full article text. When the publisher blocks scraping or paywalls the page, this is false and `content` falls back to the short RSS summary.'),
+  "fullTextAvailable": zod.boolean().describe('Whether `content` is the real full article text scraped from the publisher. When the publisher blocks scraping or paywalls the page, this is false.'),
+  "aiExpanded": zod.boolean().describe('Whether `content` is an AI-generated expanded read (not the publisher\'s original text) produced because the real full text could not be scraped. Must be clearly labeled as AI-generated when shown to users.'),
   "imageUrl": zod.string().nullish(),
   "topics": zod.array(zod.string())
 }).describe('A real, live news article sourced from the web.').and(zod.object({
@@ -65,7 +66,8 @@ export const GetArticleResponse = zod.object({
   "url": zod.string(),
   "date": zod.string(),
   "estimatedReadingTime": zod.string(),
-  "fullTextAvailable": zod.boolean().describe('Whether `content` is the real full article text. When the publisher blocks scraping or paywalls the page, this is false and `content` falls back to the short RSS summary.'),
+  "fullTextAvailable": zod.boolean().describe('Whether `content` is the real full article text scraped from the publisher. When the publisher blocks scraping or paywalls the page, this is false.'),
+  "aiExpanded": zod.boolean().describe('Whether `content` is an AI-generated expanded read (not the publisher\'s original text) produced because the real full text could not be scraped. Must be clearly labeled as AI-generated when shown to users.'),
   "imageUrl": zod.string().nullish(),
   "topics": zod.array(zod.string())
 }).describe('A real, live news article sourced from the web.')
