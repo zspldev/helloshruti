@@ -136,8 +136,7 @@ function LandingPage() {
           Hello. I'm Shruti.
         </h1>
         <p className="text-xl text-muted-foreground mb-12 leading-relaxed">
-          Your daily briefing — real news, curated to your interests, read aloud and explained in
-          plain language.
+          I find what matters to you, and then read, summarize, explain and discuss it.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
           <Button size="lg" className="text-lg h-14 px-8" onClick={() => setLocation('/sign-up')}>
