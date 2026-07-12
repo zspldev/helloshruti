@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { BookOpen } from 'lucide-react';
 import { FEATURES } from '@/config/features';
 import ShrutiIntro from '@/components/ShrutiIntro';
+import AppFooter from '@/components/AppFooter';
 
 import Onboarding from '@/pages/Onboarding';
 import WelcomeBack from '@/pages/WelcomeBack';
@@ -158,6 +159,7 @@ function LandingPage() {
         <BookOpen className="w-5 h-5" />
         <span>Live news, always in your language of choice.</span>
       </div>
+      <AppFooter />
     </div>
   );
 }
