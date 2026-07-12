@@ -8,12 +8,14 @@ import { useRef } from 'react';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useProfile } from '@/hooks/use-profile';
+import { useWelcomeBack } from '@/hooks/use-welcome-back';
 import { Button } from '@/components/ui/button';
 import { BookOpen } from 'lucide-react';
 import { FEATURES } from '@/config/features';
 import ShrutiIntro from '@/components/ShrutiIntro';
 
 import Onboarding from '@/pages/Onboarding';
+import WelcomeBack from '@/pages/WelcomeBack';
 import Dashboard from '@/pages/Dashboard';
 import ArticleDetail from '@/pages/ArticleDetail';
 import History from '@/pages/History';
@@ -162,8 +164,10 @@ function LandingPage() {
 
 function PostSignInRedirect() {
   const { getProfile } = useProfile();
+  const { wasShownToday } = useWelcomeBack();
   const profile = getProfile();
-  return <Redirect to={profile ? '/dashboard' : '/onboarding'} />;
+  if (!profile) return <Redirect to="/onboarding" />;
+  return <Redirect to={wasShownToday() ? '/dashboard' : '/welcome-back'} />;
 }
 
 function HomeRedirect() {
@@ -247,6 +251,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/sign-in/*?" component={SignInPage} />
             <Route path="/sign-up/*?" component={SignUpPage} />
             <Route path="/onboarding" component={() => <ProtectedPage component={Onboarding} />} />
+            <Route path="/welcome-back" component={() => <ProtectedPage component={WelcomeBack} />} />
             <Route path="/dashboard" component={() => <ProtectedPage component={Dashboard} />} />
             <Route
               path="/article/:id"
