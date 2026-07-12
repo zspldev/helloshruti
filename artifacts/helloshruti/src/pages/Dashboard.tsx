@@ -25,6 +25,7 @@ import {
 import { Article } from '@/models/types';
 import { articleService } from '@/services/articleService';
 import { getExplainText, getSummaryText, estimateSeconds, formatDuration } from '@/lib/narration';
+import { FEATURES } from '@/config/features';
 
 type Mode = 'read' | 'listen';
 type PanelType = 'explain' | 'summary';
@@ -295,16 +296,18 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* Floating Mic Button */}
-      <div className="fixed bottom-8 right-8 z-40">
-        <Button 
-          size="iconLg" 
-          onClick={openVoiceAssistant}
-          className="shadow-[0_8px_30px_rgba(30,63,32,0.3)] hover:scale-105 transition-transform"
-        >
-          <Mic className="w-8 h-8" />
-        </Button>
-      </div>
+      {/* Floating Mic Button — gated behind FEATURES.voiceInteraction */}
+      {FEATURES.voiceInteraction && (
+        <div className="fixed bottom-8 right-8 z-40">
+          <Button
+            size="iconLg"
+            onClick={openVoiceAssistant}
+            className="shadow-[0_8px_30px_rgba(30,63,32,0.3)] hover:scale-105 transition-transform"
+          >
+            <Mic className="w-8 h-8" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

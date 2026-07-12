@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useProfile } from '@/hooks/use-profile';
 import { Card } from '@/components/ui/card';
-import { Check, ChevronRight, Mic } from 'lucide-react';
+import { Check, ChevronRight } from 'lucide-react';
 
 const TOPICS = [
   "Taxation", "GST", "Finance", "Business", 
@@ -131,12 +131,12 @@ export default function Onboarding() {
               Language &amp; region
             </h1>
             <p className="text-xl text-muted-foreground mb-10">
-              Tell me how to talk to you, and what to read to you.
+              Tell me what to read to you, and in which language.
             </p>
 
             <div className="mb-10">
               <label className="block text-lg font-medium text-foreground mb-3">
-                Which language should I speak and listen in?
+                Which language should I read to you in?
               </label>
               <div className="space-y-4">
                 <Card 

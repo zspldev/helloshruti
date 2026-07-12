@@ -5,6 +5,7 @@ import { articleService } from '@/services/articleService';
 import { useGetArticle, getGetArticleQueryKey, useListArticles, getListArticlesQueryKey } from '@workspace/api-client-react';
 import { ArrowLeft, Clock, ExternalLink, MessageSquare, Play, Info } from 'lucide-react';
 import { useProfile } from '@/hooks/use-profile';
+import { FEATURES } from '@/config/features';
 
 export default function ArticleDetail() {
   const { id } = useParams<{ id: string }>();
@@ -145,18 +146,21 @@ export default function ArticleDetail() {
       {/* Fixed bottom action bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-border p-4 md:p-6 shadow-[0_-10px_40px_rgba(30,63,32,0.05)] z-20">
         <div className="max-w-3xl mx-auto flex gap-4">
-          <Button 
-            className="flex-1 gap-3 h-16 text-lg rounded-2xl bg-secondary text-secondary-foreground hover:bg-secondary/80" 
+          <Button
+            className="flex-1 gap-3 h-16 text-lg rounded-2xl shadow-md"
             onClick={handleListen}
           >
             <Play className="w-6 h-6" /> Listen
           </Button>
-          <Button 
-            className="flex-1 gap-3 h-16 text-lg rounded-2xl shadow-md" 
-            onClick={handleTalk}
-          >
-            <MessageSquare className="w-6 h-6" /> Talk about this
-          </Button>
+          {/* "Talk about this" — gated behind FEATURES.voiceInteraction */}
+          {FEATURES.voiceInteraction && (
+            <Button
+              className="flex-1 gap-3 h-16 text-lg rounded-2xl bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              onClick={handleTalk}
+            >
+              <MessageSquare className="w-6 h-6" /> Talk about this
+            </Button>
+          )}
         </div>
       </div>
     </div>
