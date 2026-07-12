@@ -9,8 +9,9 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useProfile } from '@/hooks/use-profile';
 import { Button } from '@/components/ui/button';
-import { Headphones, BookOpen } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 import { FEATURES } from '@/config/features';
+import ShrutiAvatar from '@/components/ShrutiAvatar';
 
 import Onboarding from '@/pages/Onboarding';
 import Dashboard from '@/pages/Dashboard';
@@ -130,9 +131,7 @@ function LandingPage() {
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background">
       <div className="flex-1 flex flex-col items-center justify-center px-6 text-center max-w-2xl mx-auto">
-        <div className="w-20 h-20 rounded-2xl bg-primary flex items-center justify-center mb-8 shadow-md">
-          <Headphones className="w-10 h-10 text-primary-foreground" />
-        </div>
+        <ShrutiAvatar className="w-28 h-28 md:w-32 md:h-32 mb-8 shadow-md ring-4 ring-white" />
         <h1 className="text-4xl md:text-6xl font-serif text-primary leading-tight mb-6">
           Hello. I'm Shruti.
         </h1>

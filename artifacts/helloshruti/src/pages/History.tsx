@@ -7,6 +7,8 @@ import { HistoryEntry } from '@/models/types';
 import { ArrowLeft, Calendar, FileText, ChevronRight, Edit2 } from 'lucide-react';
 import { Link } from 'wouter';
 import { Input } from '@/components/ui/input';
+import ShrutiAvatar from '@/components/ShrutiAvatar';
+import UserName from '@/components/UserName';
 
 export default function History() {
   const [, setLocation] = useLocation();
@@ -31,7 +33,9 @@ export default function History() {
           <Button variant="ghost" size="icon" onClick={() => setLocation('/dashboard')} className="shrink-0 rounded-full h-12 w-12 hover:bg-secondary">
             <ArrowLeft className="w-6 h-6" />
           </Button>
-          <h1 className="text-2xl font-serif text-primary">Things I've Read</h1>
+          <ShrutiAvatar className="w-9 h-9" />
+          <h1 className="text-2xl font-serif text-primary flex-1 truncate">Things I've Read</h1>
+          <UserName className="hidden sm:inline text-sm font-medium text-muted-foreground max-w-[10rem] shrink-0" />
         </div>
       </header>
 

@@ -28,6 +28,8 @@ import { articleService } from '@/services/articleService';
 import { getExplainText, getSummaryText, estimateSeconds, formatDuration } from '@/lib/narration';
 import { languageLabel } from '@/lib/language';
 import { FEATURES } from '@/config/features';
+import ShrutiAvatar from '@/components/ShrutiAvatar';
+import UserName from '@/components/UserName';
 
 type Mode = 'read' | 'listen';
 type PanelType = 'explain' | 'summary';
@@ -112,13 +114,17 @@ export default function Dashboard() {
     <div className="min-h-[100dvh] bg-background pb-32">
       <header className="bg-primary text-primary-foreground px-6 py-4 shadow-sm sticky top-0 z-10">
         <div className="max-w-3xl mx-auto flex justify-between items-center gap-4">
-          <div className="min-w-0">
-            <p className="text-primary-foreground/70 font-medium tracking-wide uppercase text-xs">Today's Reading</p>
-            <h1 className="text-xl md:text-2xl font-serif leading-snug truncate">
-              Good morning{profile.nickname ? `, ${profile.nickname}` : ''}
-            </h1>
+          <div className="flex items-center gap-3 min-w-0">
+            <ShrutiAvatar className="w-10 h-10 ring-2 ring-primary-foreground/30" />
+            <div className="min-w-0">
+              <p className="text-primary-foreground/70 font-medium tracking-wide uppercase text-xs">Today's Reading</p>
+              <h1 className="text-xl md:text-2xl font-serif leading-snug truncate">
+                Good morning{profile.nickname ? `, ${profile.nickname}` : ''}
+              </h1>
+            </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
+            <UserName className="hidden sm:inline text-sm font-medium text-primary-foreground/90 max-w-[10rem]" />
             <Link href="/history" className="p-2.5 bg-primary-foreground/10 hover:bg-primary-foreground/20 rounded-full transition-colors" title="Reading History">
               <HistoryIcon className="w-5 h-5 text-primary-foreground" />
             </Link>

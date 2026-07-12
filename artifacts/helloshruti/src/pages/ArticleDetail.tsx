@@ -6,6 +6,8 @@ import { useGetArticle, getGetArticleQueryKey, useListArticles, getListArticlesQ
 import { ArrowLeft, Clock, ExternalLink, MessageSquare, Play, Info } from 'lucide-react';
 import { useProfile } from '@/hooks/use-profile';
 import { FEATURES } from '@/config/features';
+import ShrutiAvatar from '@/components/ShrutiAvatar';
+import UserName from '@/components/UserName';
 
 export default function ArticleDetail() {
   const { id } = useParams<{ id: string }>();
@@ -70,9 +72,11 @@ export default function ArticleDetail() {
           <Button variant="ghost" size="icon" onClick={() => setLocation('/dashboard')} className="shrink-0 rounded-full h-12 w-12 hover:bg-secondary">
             <ArrowLeft className="w-6 h-6" />
           </Button>
+          <ShrutiAvatar className="w-9 h-9" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-primary uppercase tracking-wide truncate">{article.source}</p>
           </div>
+          <UserName className="hidden sm:inline text-sm font-medium text-muted-foreground max-w-[10rem] shrink-0" />
         </div>
       </header>
 

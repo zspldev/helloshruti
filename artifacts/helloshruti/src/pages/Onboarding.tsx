@@ -8,6 +8,8 @@ import { Card } from '@/components/ui/card';
 import { Check, ChevronRight } from 'lucide-react';
 import { LANGUAGE_OPTIONS } from '@/lib/language';
 import { LanguageCode } from '@/models/types';
+import ShrutiAvatar from '@/components/ShrutiAvatar';
+import UserName from '@/components/UserName';
 
 const TOPICS = [
   "Taxation", "GST", "Finance", "Business", 
@@ -69,6 +71,13 @@ export default function Onboarding() {
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background px-6 py-12 md:py-24 max-w-2xl mx-auto">
       <div className="flex-1 flex flex-col">
+        {/* Shruti's photo (large, only on step 1) or a small thumbnail on later
+            steps, plus the signed-in user's name — always on the right. */}
+        <div className="flex items-center justify-between mb-6">
+          {step === 1 ? <div /> : <ShrutiAvatar className="w-10 h-10" />}
+          <UserName className="text-base font-medium text-foreground" />
+        </div>
+
         {/* Progress indicator */}
         <div className="flex gap-2 mb-12">
           {[1, 2, 3, 4].map(s => (
@@ -81,11 +90,14 @@ export default function Onboarding() {
 
         {step === 1 && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex-1">
-            <h1 className="text-4xl md:text-5xl font-serif text-primary mb-4 leading-tight">
-              Hello. <br/>I'm Shruti.
-            </h1>
+            <div className="flex items-center gap-5 mb-4">
+              <ShrutiAvatar className="w-20 h-20 md:w-24 md:h-24 shadow-md ring-4 ring-white" />
+              <h1 className="text-4xl md:text-5xl font-serif text-primary leading-tight">
+                Hello. <br/>I'm Shruti.
+              </h1>
+            </div>
             <p className="text-xl text-muted-foreground mb-12">
-              I'll be reading your daily briefings. What should I call you?
+              Your Smart Knowledge Companion
             </p>
             
             <div className="space-y-8">
