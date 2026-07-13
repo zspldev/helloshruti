@@ -76,7 +76,7 @@ export default function ArticleDetail() {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-primary uppercase tracking-wide truncate">{article.source}</p>
           </div>
-          <UserName className="hidden sm:inline text-sm font-medium text-muted-foreground max-w-[10rem] shrink-0" />
+          <UserName className="inline text-sm font-medium text-muted-foreground max-w-[7rem] sm:max-w-[10rem] shrink-0" />
         </div>
       </header>
 
