@@ -220,7 +220,10 @@ export default function ListenPlayer() {
   const canNavigate = articles.length > 1;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-3 pointer-events-none">
+    <div
+      className="fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pointer-events-none"
+      style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+    >
       <div
         role="region"
         aria-label="Listen player"

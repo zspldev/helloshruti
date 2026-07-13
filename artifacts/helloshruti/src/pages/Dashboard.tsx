@@ -318,7 +318,7 @@ export default function Dashboard() {
 
       {/* Floating Mic Button — gated behind FEATURES.voiceInteraction */}
       {FEATURES.voiceInteraction && (
-        <div className="fixed bottom-8 right-8 z-40">
+        <div className="fixed right-8 z-40" style={{ bottom: 'max(2rem, calc(env(safe-area-inset-bottom) + 1rem))' }}>
           <Button
             size="iconLg"
             onClick={openVoiceAssistant}

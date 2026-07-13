@@ -6,7 +6,15 @@
     <meta name="theme-color" content="#1E3F20" />
     <title>HelloShruti</title>
     <meta name="description" content="A voice-first personal reading companion for professionals." />
-    
+
+    <!-- iOS ignores manifest.json's "display": "standalone" — Safari only
+         drops the browser chrome on "Add to Home Screen" when these Apple-
+         specific tags are present, so without them the iOS PWA install
+         opens a regular Safari tab instead of a standalone app window. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="HelloShruti" />
+
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/png" href="/icon-192.png" />
     <link rel="apple-touch-icon" href="/icon-192.png" />

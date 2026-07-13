@@ -148,7 +148,10 @@ export default function ArticleDetail() {
       </main>
 
       {/* Fixed bottom action bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-border p-4 md:p-6 shadow-[0_-10px_40px_rgba(30,63,32,0.05)] z-20">
+      <div
+        className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-border p-4 md:p-6 shadow-[0_-10px_40px_rgba(30,63,32,0.05)] z-20"
+        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+      >
         <div className="max-w-3xl mx-auto flex gap-4">
           <Button
             className="flex-1 gap-3 h-16 text-lg rounded-2xl shadow-md"
